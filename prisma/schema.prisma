@@ -1,62 +1,75 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql" // or "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "mongodb"
+  url      = env("MONGODB_URI")
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  roleId        Int? // N:1 role
-  role          Role?     @relation(fields: [roleId], references: [id])
 
-  accounts  Account[]
-  sessions  Session[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  roleId String? @db.ObjectId
+  role   Role?   @relation(fields: [roleId], references: [id])
+
+  accounts Account[]
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Role {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique // admin, staff, viewer
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
   description String?
   users       User[]
 }
 
+/**
+ * === NEXTAUTH STANDARD TABLES (Mongo DB)
+ */
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
+  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String @db.ObjectId
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
 
   user User @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
-  userId       String
+  userId       String   @db.ObjectId
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expires])
 }
 
 model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String   @unique
   expires    DateTime
