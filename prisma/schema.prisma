@@ -5,8 +5,12 @@ generator client {
 
 datasource db {
   provider = "mongodb"
-  url      = env("MONGODB_URI")
+  url      = env("DATABASE_URL")
 }
+
+/**
+ * ================= USERS & ROLES (NextAuth) =================
+ */
 
 model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -33,8 +37,9 @@ model Role {
 }
 
 /**
- * === NEXTAUTH STANDARD TABLES (Mongo DB)
+ * =============== NextAuth standard (Mongo) ===============
  */
+
 model Account {
   id                String @id @default(auto()) @map("_id") @db.ObjectId
   userId            String @db.ObjectId
@@ -75,4 +80,75 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+/**
+ * ===================== ASSET CORE =====================
+ */
+
+model AssetType {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique // เช่น ครุภัณฑ์สำนักงาน, คอมพิวเตอร์
+  description String?
+  assets      Asset[]
+}
+
+model AssetStatus {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique // ใช้งานอยู่, ซ่อมบำรุง, ชำรุด, จำหน่าย
+  description String?
+  assets      Asset[]
+}
+
+model Location {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  building    String?
+  room        String?
+  floor       String?
+  description String?
+  assets      Asset[]
+}
+
+model Staff {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  fullName String
+  position String?
+  phone    String?
+  email    String? @unique
+  assets   Asset[]
+}
+
+model Asset {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  assetCode String    @unique // รหัสครุภัณฑ์ เช่น EDU-001
+  assetName String
+  typeId    String    @db.ObjectId
+  type      AssetType @relation(fields: [typeId], references: [id])
+
+  brand        String?
+  model        String?
+  serialNo     String?
+  purchaseDate DateTime?
+  price        Float? // MongoDB supports Float for numeric values
+  warrantyExp  DateTime?
+
+  statusId String      @db.ObjectId
+  status   AssetStatus @relation(fields: [statusId], references: [id])
+
+  locationId String?   @db.ObjectId
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  staffId String? @db.ObjectId
+  staff   Staff?  @relation(fields: [staffId], references: [id])
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([typeId])
+  @@index([statusId])
+  @@index([locationId])
+  @@index([staffId])
+  @@index([serialNo])
 }
