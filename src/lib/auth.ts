@@ -56,7 +56,7 @@ const authSetup = NextAuth({
             "Blocked sign-in for email:",
             email,
             "hd:",
-            (profile as any)?.hd
+            (profile as any)?.hd,
           );
           return false; // AccessDenied
         }
