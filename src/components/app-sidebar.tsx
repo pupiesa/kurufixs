@@ -4,8 +4,6 @@ import {
   LayoutDashboard,
   Wrench,
   Archive,
-  User2,
-  ChevronUp,
   LogOut,
 } from "lucide-react";
 
@@ -25,6 +23,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { signOut, useSession } from "next-auth/react";
 import { ModeToggle } from "./ui/modetoggle";
 import { Button } from "./ui/button";
+import { useRouter } from "next/router";
+import { usePathname } from "next/navigation";
 
 // Menu items.
 const items = [
@@ -110,14 +110,19 @@ function SidebarFooters() {
   );
 }
 export function AppSidebar() {
+  const pathname = usePathname();
   return (
-    <Sidebar>
-      {/*  sidebar content */}
-      <SidebarContent>
-        <Navlist />
-      </SidebarContent>
-      {/*  footer */}
-      <SidebarFooters />
-    </Sidebar>
+    <>
+      {pathname !== "/login" && (
+        <Sidebar>
+          {/*  sidebar content */}
+          <SidebarContent>
+            <Navlist />
+          </SidebarContent>
+          {/*  footer */}
+          <SidebarFooters />
+        </Sidebar>
+      )}
+    </>
   );
 }
