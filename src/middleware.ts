@@ -9,8 +9,7 @@ export async function middleware(req: NextRequest) {
   // Read JWT from cookies (works on Edge). Ensure NEXTAUTH_SECRET is set.
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  // require login สำหรับ /app/*
-  if (pathname.startsWith("/app")) {
+  if (pathname == "/") {
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
@@ -28,5 +27,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/admin/:path*"],
+  matcher: ["/", "/app/:path*", "/admin/:path*"],
 };
