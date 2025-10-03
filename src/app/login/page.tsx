@@ -1,3 +1,4 @@
+import { Logincard } from "@/components/Logincard";
 import { auth, signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -25,6 +26,7 @@ export default async function LoginPage({
         <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
           Sign in
         </h1>
+        <Logincard />
         <p style={{ color: "#666", marginBottom: 20 }}>
           Use your KMITL Google account to continue.
         </p>
