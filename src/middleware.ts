@@ -1,24 +1,26 @@
 // middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth"; // จาก NextAuth config
+import { getToken } from "next-auth/jwt"; // Edge-safe JWT reader
 
 export async function middleware(req: NextRequest) {
-  const session = await auth();
   const { pathname } = req.nextUrl;
+
+  // Read JWT from cookies (works on Edge). Ensure NEXTAUTH_SECRET is set.
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   // require login สำหรับ /app/*
   if (pathname.startsWith("/app")) {
-    if (!session?.user) {
+    if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
   // block ถ้าไม่ใช่ admin เวลาเข้าหน้า /admin/*
   if (pathname.startsWith("/admin")) {
-    const role = (session?.user as any)?.role;
+    const role = (token as any)?.role;
     if (role !== "admin") {
-      return NextResponse.redirect(new URL("/403", req.url));
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
