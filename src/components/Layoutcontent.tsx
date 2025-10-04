@@ -6,7 +6,7 @@ import { AppSidebar } from "./app-sidebar";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/login") {
+  if (pathname?.startsWith("/auth")) {
     return (
       <div className="min-h-dvh w-full color-foreground bg-background">
         <main className="w-full">{children}</main>

@@ -12,20 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
-
-export function Logincard() {
+export function Registercard() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Login to your account</CardTitle>
+        <CardTitle>Create new account</CardTitle>
         <CardDescription>
           Enter your email below to login to your account
         </CardDescription>
         <CardAction>
-          <Link href="/register">
-            <Button variant="link">Sign Up</Button>
-          </Link>
+          <Button variant="link">Sign Up</Button>
         </CardAction>
       </CardHeader>
       <CardContent>

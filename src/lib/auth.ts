@@ -52,13 +52,8 @@ const authSetup = NextAuth({
           domain.endsWith(".kmitl.ac.th") ||
           (profile as any)?.hd === "kmitl.ac.th";
         if (!email || !allowed) {
-          console.warn(
-            "Blocked sign-in for email:",
-            email,
-            "hd:",
-            (profile as any)?.hd,
-          );
-          return false; // AccessDenied
+          // Redirect to /login with an error message
+          return "/login?error=AccessDenied";
         }
         // Auto-assign viewer role if user doesn't have one
         try {
