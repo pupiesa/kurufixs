@@ -19,6 +19,9 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  username     String? @unique
+  passwordHash String?
+
   roleId String?
   role   Role?   @relation(fields: [roleId], references: [id])
 
@@ -43,7 +46,7 @@ model Role {
  */
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String @id @default(cuid())
   userId            String
   type              String
   provider          String
@@ -130,16 +133,16 @@ model Asset {
   model        String?
   serialNo     String?
   purchaseDate DateTime?
-  price        Decimal? @db.Decimal(10, 2) // Better for currency
+  price        Decimal?  @db.Decimal(10, 2) // Better for currency
   warrantyExp  DateTime?
 
-  statusId String      
+  statusId String
   status   AssetStatus @relation(fields: [statusId], references: [id])
 
-  locationId String?   
+  locationId String?
   location   Location? @relation(fields: [locationId], references: [id])
 
-  staffId String? 
+  staffId String?
   staff   Staff?  @relation(fields: [staffId], references: [id])
 
   note String? @db.Text

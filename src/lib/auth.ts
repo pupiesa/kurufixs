@@ -2,12 +2,66 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Google from "next-auth/providers/google";
 import NextAuth from "next-auth";
 import { prisma } from "./prisma"; // export a singleton prisma client
-
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 const authSetup = NextAuth({
   adapter: PrismaAdapter(prisma),
   // Use JWT sessions so middleware (Edge) can read session without touching DB
   session: { strategy: "jwt" },
   providers: [
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        identifier: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(creds) {
+        const identifier = (creds as any)?.identifier
+          ?.toString()
+          .trim()
+          .toLowerCase();
+        const password = (creds as any)?.password?.toString();
+        if (!identifier || !password) return null;
+
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [{ email: identifier }, { username: identifier }],
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            passwordHash: true,
+            roleId: true,
+          },
+        });
+        if (!user || !user.passwordHash) return null;
+
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) return null;
+
+        // ensure default viewer role if missing
+        if (!user.roleId) {
+          const viewer = await prisma.role.findUnique({
+            where: { name: "viewer" },
+          });
+          if (viewer) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { roleId: viewer.id },
+            });
+          }
+        }
+
+        return {
+          id: user.id,
+          name: user.name ?? undefined,
+          email: user.email ?? undefined,
+          image: user.image ?? undefined,
+        };
+      },
+    }),
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -53,7 +107,7 @@ const authSetup = NextAuth({
           (profile as any)?.hd === "kmitl.ac.th";
         if (!email || !allowed) {
           // Redirect to /login with an error message
-          return "/login?error=AccessDenied";
+          return "/auth?error=AccessDenied";
         }
         // Auto-assign viewer role if user doesn't have one
         try {
@@ -94,7 +148,7 @@ const authSetup = NextAuth({
     },
   },
   pages: {
-    // signIn: "/login",
+    // signIn: "/auth",
   },
 });
 

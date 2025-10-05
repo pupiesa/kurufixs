@@ -6,13 +6,13 @@ import { redirect } from "next/navigation";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const params = await searchParams;
   const session = await auth();
   if (session?.user) redirect("/");
 
-  const error =
-    typeof searchParams?.error === "string" ? searchParams?.error : undefined;
+  const error = typeof params?.error === "string" ? params.error : undefined;
 
   return (
     <main className="flex min-h-screen items-center justify-center flex-col">
