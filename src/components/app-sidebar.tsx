@@ -79,7 +79,10 @@ function SidebarFooters() {
     <SidebarFooter className="border-t pt-2">
       <div className="flex items-center gap-2 px-2 py-1.5">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={session?.user?.image ?? ""} />
+          <AvatarImage
+            src={session?.user?.image ?? ""}
+            className=" rounded-full"
+          />
           <AvatarFallback>
             {session?.user?.name?.charAt(0) ?? "U"}
           </AvatarFallback>
