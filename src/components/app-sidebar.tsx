@@ -23,29 +23,28 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { signOut, useSession } from "next-auth/react";
 import { ModeToggle } from "./ui/modetoggle";
 import { Button } from "./ui/button";
-import { useRouter } from "next/router";
 import { usePathname } from "next/navigation";
 
 // Menu items.
 const items = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/",
     icon: LayoutDashboard,
   },
   {
     title: "Status",
-    url: "#",
+    url: "/status",
     icon: Wrench,
   },
   {
     title: "Reports",
-    url: "#",
+    url: "/reports",
     icon: FileText,
   },
   {
     title: "Assets",
-    url: "#",
+    url: "/assets",
     icon: Archive,
   },
 ];
