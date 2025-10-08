@@ -2,7 +2,7 @@ import prisma from "@/lib/db";
 import Cards from "@/components/Cards";
 import Cards2 from "@/components/Cards2";
 export default async function Home() {
-  const asset = await prisma.asset.findMany();
+  const asset = await prisma.account.findMany();
   return (
     <div className="variant-muted color-muted font-sans">
       <h6 className="text-4xl font-bold">Dashboard</h6>

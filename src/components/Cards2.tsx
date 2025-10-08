@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { AlertCircleIcon, CircleSmall } from "lucide-react";
+import { CircleSmall } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Cards = () => {
