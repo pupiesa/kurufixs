@@ -4,7 +4,7 @@ import Cards2 from "@/components/dashboard/Cards2";
 import Cards3 from "@/components/dashboard/Card3";
 import ProgressBar from "@/components/dashboard/ProgressBar";
 export default async function Home() {
-  const asset = await prisma.asset.findMany();
+  const asset = await prisma.account.findMany();
   return (
     <div className="variant-muted color-muted font-sans">
       <h6 className="text-4xl font-bold">Dashboard</h6>
