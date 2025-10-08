@@ -7,7 +7,6 @@ export default async function Home() {
   const asset = await prisma.account.findMany();
   return (
     <div className="variant-muted color-muted font-sans">
-      <h6 className="text-4xl font-bold">Dashboard</h6>
       <div className="flex flex-col w-full items-center">
         <div className="flex flex-col w-96 px-10 sm:w-full sm:flex-row justify-between my-5 gap-2">
           <div className="basis-full">

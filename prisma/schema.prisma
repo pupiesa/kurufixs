@@ -28,8 +28,10 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  RepairReport      RepairReport[]
+  RepairActivityLog RepairActivityLog[]
 
   @@index([roleId])
 }
@@ -114,12 +116,13 @@ model Location {
 }
 
 model Staff {
-  id       String  @id @default(cuid())
-  fullName String
-  position String?
-  phone    String?
-  email    String? @unique
-  assets   Asset[]
+  id           String         @id @default(cuid())
+  fullName     String
+  position     String?
+  phone        String?
+  email        String?        @unique
+  assets       Asset[]
+  RepairReport RepairReport[]
 }
 
 model Asset {
@@ -147,8 +150,9 @@ model Asset {
 
   note String? @db.Text
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  RepairReport RepairReport[]
 
   @@index([typeId])
   @@index([statusId])
@@ -156,4 +160,97 @@ model Asset {
   @@index([staffId])
   @@index([serialNo])
   @@index([assetCode])
+}
+
+// ========= REPAIR REPORT =========
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReportStatus {
+  PENDING // รอรับงาน
+  IN_PROGRESS // กำลังดำเนินการ
+  FIXED // แก้ไขเสร็จ
+  CLOSED // ปิดงาน
+}
+
+model RepairReport {
+  id String @id @default(cuid())
+
+  // ผูกกับครุภัณฑ์ที่ถูกรายงาน (บังคับมี)
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  // รายละเอียดปัญหา
+  issueTitle       String
+  issueDescription String  @db.Text
+  issueCategory    String? // Hardware / Software / Electrical / Network
+  urgency          Urgency @default(MEDIUM)
+
+  // ไฟล์/รูปหลักฐาน (URL)
+  imageUrl String?
+
+  // สถานะ workflow
+  status ReportStatus @default(PENDING)
+
+  // ผู้แจ้ง
+  reporterId    String?
+  reporter      User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  reporterName  String
+  reporterEmail String
+  reporterPhone String?
+
+  // ผู้รับผิดชอบงานซ่อม
+  assignedStaffId String?
+  assignedStaff   Staff?  @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
+
+  // ผลการซ่อม/หมายเหตุ และเวลาปิดงาน
+  remarks     String?   @db.Text
+  completedAt DateTime?
+
+  // เวลารับแจ้ง/แก้ไข
+  reportedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // ความสัมพันธ์เสริม (ถ้าต้องการไฟล์แนบหลายไฟล์ / ไทม์ไลน์)
+  files      RepairReportFile[]
+  activities RepairActivityLog[]
+
+  @@index([assetId])
+  @@index([status])
+  @@index([urgency])
+  @@index([assignedStaffId])
+  @@index([reporterId])
+}
+
+model RepairReportFile {
+  id        String       @id @default(cuid())
+  reportId  String
+  report    RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  url       String
+  label     String?
+  createdAt DateTime     @default(now())
+
+  @@index([reportId])
+}
+
+model RepairActivityLog {
+  id       String       @id @default(cuid())
+  reportId String
+  report   RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // ผู้กระทำ (ถ้าเป็น user ในระบบ)
+  actorUserId String?
+  actorUser   User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  // ข้อความไทม์ไลน์ เช่น "Assigned to staff A", "Status -> IN_PROGRESS"
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@index([actorUserId])
 }

@@ -1,7 +1,17 @@
-import React from "react";
+import Reportform from "@/components/reportform";
+import { prisma } from "@/lib/db";
 
-const page = () => {
-  return <div>page</div>;
-};
+export default async function ReportsPage() {
+  const assets = await prisma.asset.findMany({
+    select: { id: true, assetCode: true, assetName: true },
+    orderBy: { assetCode: "asc" },
+  });
 
-export default page;
+  return (
+    <div className="h-full flex justify-center mt-10 items-center w-full px-4">
+      <div className="w-full max-w-2xl">
+        <Reportform assets={assets} />
+      </div>
+    </div>
+  );
+}
