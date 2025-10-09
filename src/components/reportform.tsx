@@ -1,8 +1,8 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,71 +25,107 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-const schema = z.object({
-  assetId: z.string().min(1, "กรุณาเลือกครุภัณฑ์"),
-  issueTitle: z.string().min(2, "กรุณากรอกหัวข้อปัญหา"),
-  issueDescription: z.string().min(4, "กรุณาระบุรายละเอียด"),
-  issueCategory: z.string().optional(),
-  urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+type AssetOption = { id: string; assetCode: string; assetName: string };
+type ReportFormProps = { assets?: AssetOption[] };
 
-  reporterId: z.string().optional().nullable(),
-  reporterName: z.string().min(1, "กรอกชื่อผู้แจ้ง"),
-  reporterEmail: z.string().email("อีเมลไม่ถูกต้อง"),
-  reporterPhone: z.string().optional(),
-});
+const schema = z
+  .object({
+    assetId: z.string().optional(),
+    // Manual asset fields when no asset exists in DB
+    assetCodeManual: z.string().optional(),
+    assetNameManual: z.string().optional(),
+    assetTypeName: z.string().optional(),
+    assetStatusName: z.string().optional(),
+    issueTitle: z.string().min(2, "กรุณากรอกหัวข้อปัญหา"),
+    issueDescription: z.string().min(4, "กรุณาระบุรายละเอียด"),
+    issueCategory: z.string().optional(),
+    urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
+    imageUrl: z.string().url().optional().or(z.literal("")),
 
-export default function Reportform({ assets = [] }) {
+    reporterId: z.string().optional().nullable(),
+    reporterPhone: z.string().optional(),
+  })
+  .superRefine((val, ctx) => {
+    // Require either selecting an existing asset or providing a manual name
+    const hasSelected = !!val.assetId && val.assetId.length > 0;
+    const hasManual = !!val.assetNameManual && val.assetNameManual.length > 0;
+    if (!hasSelected && !hasManual) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["assetNameManual"],
+        message: "กรุณาเลือกครุภัณฑ์หรือกรอกชื่อครุภัณฑ์",
+      });
+    }
+  });
+
+type FormValues = z.infer<typeof schema>;
+
+export default function Reportform({ assets = [] }: ReportFormProps) {
   const { data: session } = useSession();
   const [submitting, setSubmitting] = useState(false);
+  const [manualAsset, setManualAsset] = useState(false);
 
-  const form = useForm({
-    resolver: zodResolver(schema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
     defaultValues: {
-      assetId: "",
+      assetId: undefined,
+      assetCodeManual: "",
+      assetNameManual: "",
+      assetTypeName: "",
+      assetStatusName: undefined,
       issueTitle: "",
       issueDescription: "",
-      issueCategory: "",
+      issueCategory: undefined,
       urgency: "MEDIUM",
       imageUrl: "",
       reporterId: session?.user?.id ?? null,
-      reporterName: session?.user?.name ?? "",
-      reporterEmail: session?.user?.email ?? "",
       reporterPhone: "",
-    },
+    } as Partial<FormValues>,
     mode: "onChange",
   });
 
-  const selectedAsset = useMemo(
-    () => assets.find((a) => a.id === form.watch("assetId")),
+  // Ensure reporterId updates when session arrives/changes
+  useEffect(() => {
+    if (session?.user?.id) {
+      form.setValue("reporterId", session.user.id);
+    }
+  }, [session?.user?.id, form]);
+
+  const selectedAsset = useMemo<AssetOption | undefined>(
+    () => assets.find((a: AssetOption) => a.id === form.watch("assetId")),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [assets, form.watch("assetId")]
   );
 
-  async function onSubmit(values) {
+  async function onSubmit(values: FormValues) {
     setSubmitting(true);
     try {
       const res = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          manualAsset,
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         alert(j?.message || "บันทึกไม่สำเร็จ");
       } else {
         form.reset({
-          assetId: "",
+          assetId: undefined,
+          assetCodeManual: "",
+          assetNameManual: "",
+          assetTypeName: "",
+          assetStatusName: undefined,
           issueTitle: "",
           issueDescription: "",
-          issueCategory: "",
+          issueCategory: undefined,
           urgency: "MEDIUM",
           imageUrl: "",
           reporterId: session?.user?.id ?? null,
-          reporterName: session?.user?.name ?? "",
-          reporterEmail: session?.user?.email ?? "",
           reporterPhone: "",
-        });
+        } as Partial<FormValues>);
         alert("ส่งฟอร์มแจ้งซ่อมเรียบร้อย");
       }
     } finally {
@@ -103,41 +139,135 @@ export default function Reportform({ assets = [] }) {
         {/* 1) ข้อมูลครุภัณฑ์ */}
         <div className="space-y-2">
           <h3 className="font-semibold">ข้อมูลครุภัณฑ์</h3>
-          <FormField
-            control={form.control}
-            name="assetId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>ครุภัณฑ์</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกครุภัณฑ์" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {assets.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.assetCode} — {a.assetName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {!manualAsset && (
+            <>
+              <FormField
+                control={form.control}
+                name="assetId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ครุภัณฑ์</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกครุภัณฑ์" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {assets.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            ไม่มีข้อมูลครุภัณฑ์ในระบบ
+                          </div>
+                        )}
+                        {assets.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.assetCode} — {a.assetName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <FormLabel>รหัสครุภัณฑ์</FormLabel>
-              <Input value={selectedAsset?.assetCode ?? ""} readOnly />
-            </div>
-            <div>
-              <FormLabel>ชื่อครุภัณฑ์</FormLabel>
-              <Input value={selectedAsset?.assetName ?? ""} readOnly />
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <FormLabel>รหัสครุภัณฑ์</FormLabel>
+                  <Input value={selectedAsset?.assetCode ?? ""} readOnly />
+                </div>
+                <div>
+                  <FormLabel>ชื่อครุภัณฑ์</FormLabel>
+                  <Input value={selectedAsset?.assetName ?? ""} readOnly />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setManualAsset((v) => !v)}
+            >
+              {manualAsset
+                ? "เลือกจากรายการครุภัณฑ์"
+                : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
+            </Button>
+            {!manualAsset && assets.length === 0 && (
+              <span className="text-sm text-muted-foreground">
+                ไม่มีข้อมูลครุภัณฑ์ ให้กรอกข้อมูลครุภัณฑ์ด้านล่าง
+              </span>
+            )}
           </div>
+
+          {manualAsset && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="assetCodeManual"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>รหัสครุภัณฑ์ (ถ้ามี)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="เช่น TMP-001" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="assetNameManual"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ชื่อครุภัณฑ์</FormLabel>
+                    <FormControl>
+                      <Input placeholder="เช่น คอมพิวเตอร์ Dell" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="assetTypeName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ประเภทครุภัณฑ์ (ถ้ามี)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="เช่น ครุภัณฑ์อื่นๆ" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="assetStatusName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>สถานะครุภัณฑ์</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกสถานะ" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ใช้งานอยู่">ใช้งานอยู่</SelectItem>
+                        <SelectItem value="ซ่อมบำรุง">ซ่อมบำรุง</SelectItem>
+                        <SelectItem value="ชำรุด">ชำรุด</SelectItem>
+                        <SelectItem value="จำหน่าย">จำหน่าย</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
         </div>
 
         {/* 2) รายละเอียดปัญหา */}
@@ -249,38 +379,18 @@ export default function Reportform({ assets = [] }) {
         {/* 3) ผู้แจ้ง */}
         <div className="space-y-2">
           <h3 className="font-semibold">ข้อมูลผู้แจ้ง</h3>
-          <input type="hidden" value={form.getValues("reporterId") ?? ""} />
+          {/* Register hidden reporterId so it is included in submission */}
+          <input type="hidden" {...form.register("reporterId")} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="reporterName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ชื่อผู้แจ้ง</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ชื่อ-นามสกุล" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="reporterEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>อีเมลผู้แจ้ง</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="you@kmitl.ac.th"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div>
+              <FormLabel>ชื่อผู้แจ้ง</FormLabel>
+              <Input value={session?.user?.name ?? ""} readOnly disabled />
+            </div>
+            <div>
+              <FormLabel>อีเมลผู้แจ้ง</FormLabel>
+              <Input value={session?.user?.email ?? ""} readOnly disabled />
+            </div>
           </div>
           <FormField
             control={form.control}
