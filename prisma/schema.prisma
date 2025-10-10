@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,30 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * ================= USERS & ROLES (NextAuth) =================
- */
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-
-  username     String? @unique
-  passwordHash String?
-
-  roleId String?
-  role   Role?   @relation(fields: [roleId], references: [id])
-
-  accounts Account[]
-  sessions Session[]
-
+  id                String              @id @default(cuid())
+  name              String?
+  email             String?             @unique
+  emailVerified     DateTime?
+  image             String?
+  username          String?             @unique
+  passwordHash      String?
+  roleId            String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
-  RepairReport      RepairReport[]
+  accounts          Account[]
   RepairActivityLog RepairActivityLog[]
+  RepairReport      RepairReport[]
+  sessions          Session[]
+  role              Role?               @relation(fields: [roleId], references: [id])
 
   @@index([roleId])
 }
@@ -43,26 +34,20 @@ model Role {
   users       User[]
 }
 
-/**
- * =============== NextAuth standard (MySQL) ===============
- */
-
 model Account {
-  id                String @id @default(cuid())
+  id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-
-  refresh_token String? @db.Text
-  access_token  String? @db.Text
-  expires_at    Int?
-  token_type    String?
-  scope         String?
-  id_token      String? @db.Text
-  session_state String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -73,8 +58,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expires])
@@ -88,20 +72,16 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/**
- * ===================== ASSET CORE =====================
- */
-
 model AssetType {
   id          String  @id @default(cuid())
-  name        String  @unique // เช่น ครุภัณฑ์สำนักงาน, คอมพิวเตอร์
+  name        String  @unique
   description String? @db.Text
   assets      Asset[]
 }
 
 model AssetStatus {
   id          String  @id @default(cuid())
-  name        String  @unique // ใช้งานอยู่, ซ่อมบำรุง, ชำรุด, จำหน่าย
+  name        String  @unique
   description String? @db.Text
   assets      Asset[]
 }
@@ -126,32 +106,26 @@ model Staff {
 }
 
 model Asset {
-  id        String    @id @default(cuid())
-  assetCode String    @unique // รหัสครุภัณฑ์ เช่น EDU-001
-  assetName String
-  typeId    String
-  type      AssetType @relation(fields: [typeId], references: [id])
-
+  id           String         @id @default(cuid())
+  assetCode    String         @unique
+  assetName    String
+  typeId       String
   brand        String?
   model        String?
   serialNo     String?
   purchaseDate DateTime?
-  price        Decimal?  @db.Decimal(10, 2) // Better for currency
+  price        Decimal?       @db.Decimal(10, 2)
   warrantyExp  DateTime?
-
-  statusId String
-  status   AssetStatus @relation(fields: [statusId], references: [id])
-
-  locationId String?
-  location   Location? @relation(fields: [locationId], references: [id])
-
-  staffId String?
-  staff   Staff?  @relation(fields: [staffId], references: [id])
-
-  note String? @db.Text
-
+  statusId     String
+  locationId   String?
+  staffId      String?
+  note         String?        @db.Text
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
+  location     Location?      @relation(fields: [locationId], references: [id])
+  staff        Staff?         @relation(fields: [staffId], references: [id])
+  status       AssetStatus    @relation(fields: [statusId], references: [id])
+  type         AssetType      @relation(fields: [typeId], references: [id])
   RepairReport RepairReport[]
 
   @@index([typeId])
@@ -162,63 +136,30 @@ model Asset {
   @@index([assetCode])
 }
 
-// ========= REPAIR REPORT =========
-
-enum Urgency {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum ReportStatus {
-  PENDING // รอรับงาน
-  IN_PROGRESS // กำลังดำเนินการ
-  FIXED // แก้ไขเสร็จ
-  CLOSED // ปิดงาน
-}
-
 model RepairReport {
-  id String @id @default(cuid())
-
-  // ผูกกับครุภัณฑ์ที่ถูกรายงาน (บังคับมี)
-  assetId String
-  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
-
-  // รายละเอียดปัญหา
+  id               String              @id @default(cuid())
+  assetId          String
   issueTitle       String
-  issueDescription String  @db.Text
-  issueCategory    String? // Hardware / Software / Electrical / Network
-  urgency          Urgency @default(MEDIUM)
-
-  // ไฟล์/รูปหลักฐาน (URL)
-  imageUrl String?
-
-  // สถานะ workflow
-  status ReportStatus @default(PENDING)
-
-  // ผู้แจ้ง
-  reporterId    String?
-  reporter      User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
-  reporterName  String
-  reporterEmail String
-  reporterPhone String?
-
-  // ผู้รับผิดชอบงานซ่อม
-  assignedStaffId String?
-  assignedStaff   Staff?  @relation(fields: [assignedStaffId], references: [id], onDelete: SetNull)
-
-  // ผลการซ่อม/หมายเหตุ และเวลาปิดงาน
-  remarks     String?   @db.Text
-  completedAt DateTime?
-
-  // เวลารับแจ้ง/แก้ไข
-  reportedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // ความสัมพันธ์เสริม (ถ้าต้องการไฟล์แนบหลายไฟล์ / ไทม์ไลน์)
-  files      RepairReportFile[]
-  activities RepairActivityLog[]
+  issueDescription String              @db.Text
+  issueCategory    String?
+  urgency          Urgency             @default(MEDIUM)
+  imageUrl         String?
+  status           ReportStatus        @default(PENDING)
+  reporterId       String?
+  reporterName     String
+  reporterEmail    String
+  reporterPhone    String?
+  assignedStaffId  String?
+  remarks          String?             @db.Text
+  completedAt      DateTime?
+  reportedAt       DateTime            @default(now())
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  activities       RepairActivityLog[]
+  asset            Asset               @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  assignedStaff    Staff?              @relation(fields: [assignedStaffId], references: [id])
+  reporter         User?               @relation(fields: [reporterId], references: [id])
+  files            RepairReportFile[]
 
   @@index([assetId])
   @@index([status])
@@ -230,27 +171,36 @@ model RepairReport {
 model RepairReportFile {
   id        String       @id @default(cuid())
   reportId  String
-  report    RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   url       String
   label     String?
   createdAt DateTime     @default(now())
+  report    RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
 }
 
 model RepairActivityLog {
-  id       String       @id @default(cuid())
-  reportId String
-  report   RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  // ผู้กระทำ (ถ้าเป็น user ในระบบ)
+  id          String       @id @default(cuid())
+  reportId    String
   actorUserId String?
-  actorUser   User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
-
-  // ข้อความไทม์ไลน์ เช่น "Assigned to staff A", "Status -> IN_PROGRESS"
-  message   String   @db.Text
-  createdAt DateTime @default(now())
+  message     String       @db.Text
+  createdAt   DateTime     @default(now())
+  actorUser   User?        @relation(fields: [actorUserId], references: [id])
+  report      RepairReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@index([actorUserId])
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ReportStatus {
+  PENDING
+  IN_PROGRESS
+  FIXED
+  CLOSED
 }
