@@ -2,9 +2,11 @@ import prisma from "@/lib/db";
 import Cards from "@/components/dashboard/Cards";
 import Cards2 from "@/components/dashboard/Cards2";
 import Cards3 from "@/components/dashboard/Card3";
-import ProgressBar from "@/components/dashboard/ProgressBar";
 export default async function Home() {
-  const asset = await prisma.account.findMany();
+  const assets = await prisma.asset.findMany({
+    select: { id: true, assetCode: true, assetName: true },
+  });
+  console.log(assets);
   return (
     <div className="variant-muted color-muted font-sans">
       <div className="flex flex-col w-full items-center">
