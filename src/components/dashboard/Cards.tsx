@@ -1,21 +1,25 @@
 import {
   Card,
   CardAction,
-  CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Wrench } from "lucide-react";
 
-const Cards2 = () => {
+interface Cards2Props {
+  total: number;
+  title: string;
+  desc: string;
+}
+
+const Cards2 = (props: Cards2Props) => {
   return (
     <Card className="">
       <CardHeader>
-        <CardTitle>Total Equipment</CardTitle>
-        <CardTitle className="text-5xl font-bold">50</CardTitle>
-        <CardDescription>Card Footer</CardDescription>
+        <CardTitle>{props.title}</CardTitle>
+        <CardTitle className="text-5xl font-bold">{props.total}</CardTitle>
+        <CardDescription>{props.desc}</CardDescription>
         <CardAction>
           <Wrench className="text-blue-400" />
         </CardAction>

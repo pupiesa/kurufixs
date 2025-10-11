@@ -16,6 +16,7 @@ async function getData(): Promise<ReportRow[]> {
       id: true,
       status: true,
       createdAt: true,
+      updatedAt: true,
       asset: {
         select: {
           assetName: true,
@@ -32,6 +33,8 @@ async function getData(): Promise<ReportRow[]> {
     room: r.asset?.location?.room ?? null,
     status: r.status,
     createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    detail: "View",
   }));
 }
 

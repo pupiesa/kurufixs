@@ -8,7 +8,12 @@ import {
 
 import { CircleSmall } from "lucide-react";
 import { Badge } from "../ui/badge";
-const Cards = () => {
+import prisma from "@/lib/db";
+const Cards = async () => {
+  const status = await prisma.repairReport.findMany({
+    select: { status: true },
+    where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
+  });
   return (
     <Card className="h-full">
       <CardHeader>

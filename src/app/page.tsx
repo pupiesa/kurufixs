@@ -4,21 +4,39 @@ import Cards2 from "@/components/dashboard/Cards2";
 import Cards3 from "@/components/dashboard/Card3";
 export default async function Home() {
   const assets = await prisma.asset.findMany({
-    select: { id: true, assetCode: true, assetName: true },
+    select: { id: true },
   });
-  console.log(assets);
+  const assetsCount = await prisma.asset.count();
+  const status = await prisma.repairReport.findMany({
+    select: { status: true },
+    where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
+  });
+  console.log("assets :", assets);
+  console.log("status :", status.length);
   return (
     <div className="variant-muted color-muted font-sans">
       <div className="flex flex-col w-full items-center">
         <div className="flex flex-col w-96 px-10 sm:w-full sm:flex-row justify-between my-5 gap-2">
           <div className="basis-full">
-            <Cards />
+            <Cards
+              total={assetsCount}
+              title="Total Assets"
+              desc="Overall registered devices"
+            />
           </div>
           <div className="basis-full">
-            <Cards />
+            <Cards
+              total={status.length}
+              title="Under Repair"
+              desc="Currently being serviced"
+            />
           </div>
           <div className="basis-full">
-            <Cards />
+            <Cards
+              total={assets.length}
+              title="Under Repair"
+              desc="Currently being serviced"
+            />
           </div>
         </div>
       </div>
