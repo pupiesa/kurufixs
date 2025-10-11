@@ -1,3 +1,4 @@
+import { CircleSmall } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -5,12 +6,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-import { CircleSmall } from "lucide-react";
-import { Badge } from "../ui/badge";
 import prisma from "@/lib/db";
+import { Badge } from "../ui/badge";
+
 const Cards = async () => {
-  const status = await prisma.repairReport.findMany({
+  const _status = await prisma.repairReport.findMany({
     select: { status: true },
     where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
   });

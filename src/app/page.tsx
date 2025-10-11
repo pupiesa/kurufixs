@@ -1,7 +1,7 @@
-import prisma from "@/lib/db";
+import Cards3 from "@/components/dashboard/Card3";
 import Cards from "@/components/dashboard/Cards";
 import Cards2 from "@/components/dashboard/Cards2";
-import Cards3 from "@/components/dashboard/Card3";
+import prisma from "@/lib/db";
 export default async function Home() {
   const assets = await prisma.asset.findMany({
     select: { id: true },

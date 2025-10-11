@@ -1,12 +1,14 @@
 "use client";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import {
+  Archive,
   FileText,
   LayoutDashboard,
-  Wrench,
-  Archive,
   LogOut,
+  Wrench,
 } from "lucide-react";
-
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,11 +21,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { signOut, useSession } from "next-auth/react";
-import { ModeToggle } from "./ui/modetoggle";
 import { Button } from "./ui/button";
-import { usePathname } from "next/navigation";
+import { ModeToggle } from "./ui/modetoggle";
 
 // Menu items.
 const items = [

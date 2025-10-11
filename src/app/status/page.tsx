@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/db";
 import { columns } from "@/app/status/columns";
 import { DataTable } from "@/components/data-table";
+import { prisma } from "@/lib/db";
 
 export type ReportRow = {
   id: string;

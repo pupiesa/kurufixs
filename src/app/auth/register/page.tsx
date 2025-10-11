@@ -1,7 +1,7 @@
-import { Registercard } from "@/components/Registercard";
-import { auth } from "@/lib/auth";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { Registercard } from "@/components/Registercard";
+import { auth } from "@/lib/auth";
 
 export default async function LoginPage({
   searchParams,

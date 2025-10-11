@@ -1,8 +1,8 @@
 "use client";
-import { ColumnDef } from "@tanstack/react-table";
-import type { ReportRow } from "./page";
-import { Button } from "@/components/ui/button";
+import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import type { ReportRow } from "./page";
 
 export const columns: ColumnDef<ReportRow>[] = [
   { accessorKey: "assetName", header: "Asset" },

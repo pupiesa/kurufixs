@@ -1,3 +1,4 @@
+import { Wrench } from "lucide-react";
 import {
   Card,
   CardAction,
@@ -5,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Wrench } from "lucide-react";
 
 interface Cards2Props {
   total: number;

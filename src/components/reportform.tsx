@@ -1,9 +1,9 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type Resolver } from "react-hook-form";
-import { z } from "zod";
-import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useEffect, useMemo, useState } from "react";
+import { type Resolver, useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,15 +15,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 
 type AssetOption = { id: string; assetCode: string; assetName: string };
 type ReportFormProps = { assets?: AssetOption[] };
@@ -94,7 +94,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
   const selectedAsset = useMemo<AssetOption | undefined>(
     () => assets.find((a: AssetOption) => a.id === form.watch("assetId")),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assets, form.watch("assetId")]
+    [assets, form.watch],
   );
 
   async function onSubmit(values: FormValues) {
@@ -191,9 +191,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
               size="sm"
               onClick={() => setManualAsset((v) => !v)}
             >
-              {manualAsset
-                ? "เลือกจากรายการครุภัณฑ์"
-                : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
+              {manualAsset ? "เลือกจากรายการครุภัณฑ์" : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
             </Button>
             {!manualAsset && assets.length === 0 && (
               <span className="text-sm text-muted-foreground">

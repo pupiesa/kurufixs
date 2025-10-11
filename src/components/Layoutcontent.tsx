@@ -1,11 +1,12 @@
 "use client";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import React from "react";
-import { SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import type React from "react";
 import { AppSidebar } from "./app-sidebar";
 import Navbars from "./Navbar";
-import dynamic from "next/dynamic";
-const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: false });
+import { SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+
+const _Navbar = dynamic(() => import("@/components/Navbar"), { ssr: false });
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -1,6 +1,7 @@
 // middleware.ts
-import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt"; // Edge-safe JWT reader
 
 export async function middleware(req: NextRequest) {
@@ -9,7 +10,7 @@ export async function middleware(req: NextRequest) {
   // Read JWT from cookies (works on Edge). Ensure NEXTAUTH_SECRET is set.
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-  if (pathname == "/") {
+  if (pathname === "/") {
     if (!token) {
       return NextResponse.redirect(new URL("/auth", req.url));
     }

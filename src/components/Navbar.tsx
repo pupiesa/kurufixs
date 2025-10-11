@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Button } from "./ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
 
 const Navbars = () => {
   const pathname = usePathname();

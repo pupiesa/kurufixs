@@ -1,6 +1,6 @@
+import ProgressBar from "@/components/dashboard/ProgressBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import ProgressBar from "@/components/dashboard/ProgressBar";
 const Cards = () => {
   return (
     <Card className="h-full">
