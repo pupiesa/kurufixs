@@ -1,10 +1,13 @@
-// lib/prisma.ts
+// lib/db.ts
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+// Reuse a single PrismaClient across HMR/edge reloads to avoid exhausting pool
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prisma: PrismaClient =
+  globalForPrisma.prisma ?? new PrismaClient({ log: ["error"] });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Cache on global in all envs; module cache should handle prod, but this is safe
+globalForPrisma.prisma ??= prisma;
 
 export default prisma;

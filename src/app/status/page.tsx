@@ -1,17 +1,20 @@
 import { columns } from "@/app/status/columns";
 import { DataTable } from "@/components/data-table";
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 export type ReportRow = {
   id: string;
   assetName: string;
-  room: string | null;
+  room: string;
   status: string;
   createdAt: Date;
+  updatedAt: Date;
 };
 
-async function getData(): Promise<ReportRow[]> {
+async function getData(userId?: string): Promise<ReportRow[]> {
   const reports = await prisma.repairReport.findMany({
+    where: userId ? { reporterId: userId } : undefined,
     select: {
       id: true,
       status: true,
@@ -26,20 +29,24 @@ async function getData(): Promise<ReportRow[]> {
     },
     orderBy: { createdAt: "desc" },
   });
-  console.log(reports);
+
   return reports.map((r) => ({
     id: r.id,
     assetName: r.asset?.assetName ?? "-",
-    room: r.asset?.location?.room ?? null,
+    room: `${r.asset?.location?.building ?? ""}${
+      r.asset?.location?.room ?? ""
+    }`,
     status: r.status,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
-    detail: "View",
   }));
 }
 
 export default async function StatusPage() {
-  const data = await getData();
+  const session = await auth();
+  const userId = session?.user?.id;
+  const data = await getData(userId);
+
   return (
     <div className="container mx-auto py-10">
       <DataTable columns={columns} data={data} />

@@ -5,6 +5,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Settings,
   Wrench,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -45,6 +46,11 @@ const items = [
     title: "Assets",
     url: "/assets",
     icon: Archive,
+  },
+  {
+    title: "Account",
+    url: "/account",
+    icon: Settings,
   },
 ];
 
@@ -102,7 +108,7 @@ function SidebarFooters() {
           variant="secondary"
           size="sm"
           className="w-full"
-          onClick={() => signOut()}
+          onClick={() => signOut({ redirectTo: "/auth" })}
         >
           <LogOut className="mr-2 h-4 w-4" /> Sign out
         </Button>

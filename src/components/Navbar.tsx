@@ -16,11 +16,13 @@ const Navbars = () => {
     switch (path) {
       case "/":
         return "Dashboard";
-      case "/status":
+      case (path.startsWith("/status") && path) || "/status":
         return "Status";
       case "/reports":
         return "Reports";
-      case "/assets":
+      case "/account":
+        return "User Profile Setting";
+      case (path.startsWith("/assets") && path) || "/assets":
         return "Assets";
       default:
         return "Dashboard";
@@ -46,9 +48,13 @@ const Navbars = () => {
       <div className="basis-full">
         <h6 className="text-4xl font-bold">{displayName}</h6>
       </div>
-      <Link href="/reports" className="mr-4">
-        <Buttons />
-      </Link>
+      {pathname !== "/account" &&
+        pathname !== "/reports" &&
+        pathname !== "/settings" && (
+          <Link href="/reports" className="mr-4">
+            <Buttons />
+          </Link>
+        )}
     </div>
   );
 };
