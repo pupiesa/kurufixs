@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs"; // Prisma requires Node runtime
 
@@ -16,13 +16,13 @@ export async function POST(req: Request) {
     if (!password || (!emailLower && !usernameLower)) {
       return NextResponse.json(
         { message: "Email or username and password required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     if (password.length < 6) {
       return NextResponse.json(
         { message: "Password must be at least 6 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     if (exists)
       return NextResponse.json(
         { message: "User already exists" },
-        { status: 409 }
+        { status: 409 },
       );
 
     const passwordHash = await bcrypt.hash(password, 12);

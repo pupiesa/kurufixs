@@ -1,9 +1,10 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import Google from "next-auth/providers/google";
-import NextAuth from "next-auth";
-import { prisma } from "./prisma"; // export a singleton prisma client
-import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import { prisma } from "./db"; // export a singleton prisma client
+
 const authSetup = NextAuth({
   adapter: PrismaAdapter(prisma),
   // Use JWT sessions so middleware (Edge) can read session without touching DB

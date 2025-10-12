@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,8 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn } from "next-auth/react";
-import Link from "next/link";
 
 export function Logincard() {
   const [loading, setLoading] = useState(false);
