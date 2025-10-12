@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export async function updateProfileAction(formData: FormData): Promise<void> {
   const session = await auth();
@@ -14,18 +15,34 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
   const email = (formData.get("email") ?? "").toString().trim();
   const username = (formData.get("username") ?? "").toString().trim();
   const password = (formData.get("password") ?? "").toString();
+  const confirmPassword = (formData.get("confirmPassword") ?? "").toString();
 
   const data: Record<string, unknown> = {};
   if (name.length > 0) data.name = name;
   if (email.length > 0) data.email = email;
-  if (username.length > 0) data.username = username;
-  if (password.length > 0) data.passwordHash = await bcrypt.hash(password, 10);
+  // username immutable once set
+  if (username.length > 0) {
+    const current = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+    if (!current?.username) {
+      data.username = username;
+    }
+  }
+  if (password.length > 0) {
+    if (password !== confirmPassword) {
+      redirect("/account?error=password_mismatch");
+    }
+    data.passwordHash = await bcrypt.hash(password, 10);
+  }
 
   if (Object.keys(data).length === 0) return;
 
   try {
     await prisma.user.update({ where: { id: userId }, data });
     revalidatePath("/account");
+    redirect("/account?updated=1");
   } catch (e: any) {
     console.error("updateProfileAction error", e);
   }
