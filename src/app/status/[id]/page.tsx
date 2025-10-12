@@ -8,6 +8,8 @@ interface StatusDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const runtime = "nodejs";
+
 export default async function StatusDetailPage({
   params,
 }: StatusDetailPageProps) {

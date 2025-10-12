@@ -12,6 +12,8 @@ export type ReportRow = {
   updatedAt: Date;
 };
 
+export const runtime = "nodejs";
+
 async function getData(userId?: string): Promise<ReportRow[]> {
   const reports = await prisma.repairReport.findMany({
     where: userId ? { reporterId: userId } : undefined,
