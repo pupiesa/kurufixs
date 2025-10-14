@@ -94,7 +94,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
   const selectedAsset = useMemo<AssetOption | undefined>(
     () => assets.find((a: AssetOption) => a.id === form.watch("assetId")),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assets, form.watch],
+    [assets, form.watch]
   );
 
   async function onSubmit(values: FormValues) {
@@ -191,7 +191,9 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
               size="sm"
               onClick={() => setManualAsset((v) => !v)}
             >
-              {manualAsset ? "เลือกจากรายการครุภัณฑ์" : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
+              {manualAsset
+                ? "เลือกจากรายการครุภัณฑ์"
+                : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
             </Button>
             {!manualAsset && assets.length === 0 && (
               <span className="text-sm text-muted-foreground">
@@ -247,17 +249,21 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>สถานะครุภัณฑ์</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value}
+                      defaultValue="ชำรุด"
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="เลือกสถานะ" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="ใช้งานอยู่">ใช้งานอยู่</SelectItem>
-                        <SelectItem value="ซ่อมบำรุง">ซ่อมบำรุง</SelectItem>
+                        {/* <SelectItem value="ใช้งานอยู่">ใช้งานอยู่</SelectItem> */}
+                        {/* <SelectItem value="ซ่อมบำรุง">ซ่อมบำรุง</SelectItem> */}
                         <SelectItem value="ชำรุด">ชำรุด</SelectItem>
-                        <SelectItem value="จำหน่าย">จำหน่าย</SelectItem>
+                        {/* <SelectItem value="จำหน่าย">จำหน่าย</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -47,3 +47,39 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
     console.error("updateProfileAction error", e);
   }
 }
+
+export async function updateTicketAction(formData: FormData): Promise<void> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return;
+
+  const ticketId = (formData.get("ticketId") ?? "").toString();
+  const newStatus = (formData.get("status") ?? "").toString();
+  const message = (formData.get("message") ?? "").toString().trim();
+
+  if (!ticketId || !newStatus) return;
+
+  try {
+    // Update ticket status
+    await prisma.repairReport.update({
+      where: { id: ticketId },
+      data: { status: newStatus as any },
+    });
+
+    // Log activity
+    await prisma.repairActivityLog.create({
+      data: {
+        reportId: ticketId,
+        actorUserId: userId,
+        message:
+          message.length > 0 ? message : `Status changed to ${newStatus}`,
+      },
+    });
+
+    revalidatePath(`/staff/${ticketId}`);
+    revalidatePath("/staff");
+    redirect(`/staff/${ticketId}?updated=1`);
+  } catch (e: any) {
+    console.error("updateTicketAction error", e);
+  }
+}

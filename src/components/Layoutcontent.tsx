@@ -24,7 +24,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex-1 min-w-0">
           <SidebarTrigger />
           <main className="w-full">
-            <Navbars /> {/* now client-only */}
+            <Navbars />
             {children}
           </main>
         </div>

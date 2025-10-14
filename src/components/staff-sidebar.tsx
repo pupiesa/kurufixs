@@ -1,17 +1,15 @@
 "use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import {
   Archive,
   FileText,
   LayoutDashboard,
   LogOut,
   Settings,
-  UserStar,
   Wrench,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,32 +24,37 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./ui/modetoggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type MenuItem = {
-  title: string;
-  url: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
+// Menu items.
+const items = [
+  {
+    title: "Dashboard",
+    url: "/",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Status",
+    url: "/status",
+    icon: Wrench,
+  },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: FileText,
+  },
+  {
+    title: "Assets",
+    url: "/assets",
+    icon: Archive,
+  },
+  {
+    title: "Account",
+    url: "/account",
+    icon: Settings,
+  },
+];
 
 function Navlist() {
-  const { data: session } = useSession();
-  const role = (session?.user as any)?.role ?? null;
-
-  const items: MenuItem[] = [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard },
-    { title: "Status", url: "/status", icon: Wrench },
-    { title: "Reports", url: "/reports", icon: FileText },
-    { title: "Assets", url: "/assets", icon: Archive },
-    { title: "Account", url: "/account", icon: Settings },
-  ];
-
-  if (role === "staff" || role === "admin") {
-    // items.splice(2, 1);
-    // items.splice(1, 1);
-    items.push({ title: "Ticket Management", url: "/staff", icon: UserStar });
-  }
-
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Kurufix</SidebarGroupLabel>
@@ -60,10 +63,10 @@ function Navlist() {
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <Link href={item.url}>
+                <a href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
-                </Link>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -82,8 +85,7 @@ function SidebarFooters() {
         <Avatar className="h-8 w-8">
           <AvatarImage
             src={session?.user?.image ?? ""}
-            className="rounded-full object-cover"
-            alt={session?.user?.name ?? "User"}
+            className=" rounded-full"
           />
           <AvatarFallback>
             {session?.user?.name?.charAt(0) ?? "U"}
@@ -114,17 +116,20 @@ function SidebarFooters() {
     </SidebarFooter>
   );
 }
-
 export function AppSidebar() {
   const pathname = usePathname();
-  if (pathname.startsWith("/auth")) return null;
-
   return (
-    <Sidebar>
-      <SidebarContent>
-        <Navlist />
-      </SidebarContent>
-      <SidebarFooters />
-    </Sidebar>
+    <>
+      {pathname !== "/login" && (
+        <Sidebar>
+          {/*  sidebar content */}
+          <SidebarContent>
+            <Navlist />
+          </SidebarContent>
+          {/*  footer */}
+          <SidebarFooters />
+        </Sidebar>
+      )}
+    </>
   );
 }
