@@ -26,6 +26,8 @@ const Navbars = () => {
         return "Assets";
       case (path.startsWith("/staff") && path) || "/staff":
         return "Ticket Management";
+      case (path.startsWith("/admin") && path) || "/admin":
+        return "Admin Panel";
       default:
         return "Dashboard";
     }
@@ -55,6 +57,7 @@ const Navbars = () => {
         !pathname.startsWith("/staff") &&
         pathname &&
         pathname !== "/reports" &&
+        !pathname.startsWith("/admin") &&
         pathname !== "/settings" && (
           <Link href="/reports" className="mr-4">
             <Buttons />

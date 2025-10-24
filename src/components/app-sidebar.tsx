@@ -11,6 +11,7 @@ import {
   Settings,
   UserStar,
   Wrench,
+  UserPen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -46,12 +47,14 @@ function Navlist() {
     { title: "Account", url: "/account", icon: Settings },
   ];
   // staff sidebar nav list
-  if (role === "staff") {
+  if (role === "staff" || role === "admin") {
     // items.splice(2, 1);
     // items.splice(1, 1);
     items.push({ title: "Ticket Management", url: "/staff", icon: UserStar });
   }
-
+  if (role === "admin") {
+    items.push({ title: "Admin Panel", url: "/admin", icon: UserPen });
+  }
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Kurufix</SidebarGroupLabel>

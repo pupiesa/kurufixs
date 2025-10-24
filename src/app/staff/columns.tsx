@@ -8,6 +8,7 @@ export const columns: ColumnDef<AssetRow>[] = [
   { accessorKey: "assetCode", header: "Asset Code" },
   { accessorKey: "assetName", header: "Asset Name" },
   { accessorKey: "status", header: "Status" },
+  { accessorKey: "urgency", header: "Urgency" },
   { accessorKey: "location", header: "Location" },
   { accessorKey: "ticketStatus", header: "Ticket Status" },
   {

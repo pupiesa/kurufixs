@@ -8,6 +8,7 @@ export type AssetRow = {
   assetName: string;
   location: string;
   status: string;
+  urgency: string;
   assetCode: string;
   ticketStatus: string;
 };
@@ -36,6 +37,7 @@ async function getData(): Promise<AssetRow[]> {
       id: t.id, // ticket ID, not asset ID
       assetCode: assetItem?.assetCode ?? "",
       assetName: assetItem?.assetName ?? "",
+      urgency: t.urgency,
       location: `${assetItem?.location?.building ?? ""} ${
         assetItem?.location?.room ?? "-"
       }`,

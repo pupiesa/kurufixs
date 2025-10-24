@@ -15,7 +15,7 @@ const Cards = async () => {
       id: true,
       status: true,
       issueTitle: true,
-      createdAt: true,
+      updatedAt: true,
       asset: {
         select: {
           assetName: true,
@@ -23,7 +23,7 @@ const Cards = async () => {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" },
     take: 5,
   });
 
@@ -49,8 +49,8 @@ const Cards = async () => {
                     {ticket.asset.location?.room ?? "-"}
                   </CardDescription>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {ticket.createdAt.toLocaleDateString()}{" "}
-                    {ticket.createdAt.toLocaleTimeString([], {
+                    {ticket.updatedAt.toLocaleDateString()}{" "}
+                    {ticket.updatedAt.toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
