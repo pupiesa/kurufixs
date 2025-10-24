@@ -45,8 +45,8 @@ function Navlist() {
     { title: "Assets", url: "/assets", icon: Archive },
     { title: "Account", url: "/account", icon: Settings },
   ];
-
-  if (role === "staff" || role === "admin") {
+  // staff sidebar nav list
+  if (role === "staff") {
     // items.splice(2, 1);
     // items.splice(1, 1);
     items.push({ title: "Ticket Management", url: "/staff", icon: UserStar });

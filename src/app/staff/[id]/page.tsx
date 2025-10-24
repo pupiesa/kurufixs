@@ -56,16 +56,14 @@ export default async function TicketPage({ params }: TicketPageProps) {
   };
 
   return (
-    <div className="container mx-auto py-5 max-w-lg">
+    <div className="container mx-auto py-5 max-w-lg px-3">
       <Button>
         <SquareArrowLeft />
         <Link href="/staff">Back to Ticket list</Link>
       </Button>
       <Card className="flex justify-center items-center">
         <CardHeader className="self-start">
-          <CardTitle className="text-2xl">
-            Ticket #{ticket.id.slice(0, 8)}
-          </CardTitle>
+          <CardTitle className="text-2xl">Ticket #{ticket.id}</CardTitle>
           <div className="flex gap-2 mt-2">
             <Badge className={urgencyColor[ticket.urgency]}>
               {ticket.urgency}
@@ -77,11 +75,15 @@ export default async function TicketPage({ params }: TicketPageProps) {
           {/* Issue Details */}
           <div>
             <h3 className="font-semibold text-lg mb-2">Issue Details</h3>
-            <div className="space-y-2 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium">Title:</span> {ticket.issueTitle}
               </div>
               <div>
+                <span className="font-medium">Reported:</span>{" "}
+                {ticket.reportedAt.toLocaleString()}
+              </div>
+              <div className="col-span-1 sm:col-span-2">
                 <span className="font-medium">Description:</span>{" "}
                 {ticket.issueDescription}
               </div>
@@ -91,20 +93,20 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   {ticket.issueCategory}
                 </div>
               )}
-              <div>
-                <span className="font-medium">Reported:</span>{" "}
-                {ticket.reportedAt.toLocaleString()}
-              </div>
             </div>
           </div>
 
           {/* Asset Details */}
           <div>
             <h3 className="font-semibold text-lg mb-2">Asset Information</h3>
-            <div className="space-y-2 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium">Asset:</span>{" "}
-                {ticket.asset.assetName} ({ticket.asset.assetCode})
+                {ticket.asset.assetName}
+              </div>
+              <div>
+                <span className="font-medium">Code:</span>{" "}
+                {ticket.asset.assetCode}
               </div>
               <div>
                 <span className="font-medium">Type:</span>{" "}
@@ -115,7 +117,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
                 {ticket.asset.status?.name ?? "-"}
               </div>
               {ticket.asset.location && (
-                <div>
+                <div className="col-span-1 sm:col-span-2">
                   <span className="font-medium">Location:</span>{" "}
                   {ticket.asset.location.building} {ticket.asset.location.room}
                 </div>
@@ -126,35 +128,22 @@ export default async function TicketPage({ params }: TicketPageProps) {
           {/* Reporter */}
           <div>
             <h3 className="font-semibold text-lg mb-2">Reporter</h3>
-            <div className="space-y-1 text-sm">
-              <div>{ticket.reporterName}</div>
-              <div className="text-muted-foreground">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Name:</span> {ticket.reporterName}
+              </div>
+              <div>
+                <span className="font-medium">Email:</span>{" "}
                 {ticket.reporterEmail}
               </div>
-              {ticket.reporterPhone && <div>{ticket.reporterPhone}</div>}
+              {ticket.reporterPhone && (
+                <div>
+                  <span className="font-medium">Phone:</span>{" "}
+                  {ticket.reporterPhone}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Activity Log */}
-          {ticket.activities.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-lg mb-2">Activity Log</h3>
-              <div className="space-y-2">
-                {ticket.activities.map((log) => (
-                  <div
-                    key={log.id}
-                    className="border-l-2 border-muted pl-4 py-2 text-sm"
-                  >
-                    <div className="text-muted-foreground text-xs">
-                      {log.createdAt.toLocaleString()} -{" "}
-                      {log.actorUser?.name ?? "System"}
-                    </div>
-                    <div>{log.message}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Update Form */}
           <div className="border-t pt-6">

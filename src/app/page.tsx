@@ -41,7 +41,7 @@ export default async function Home() {
         </div>
       </div>
       {/* section 2 */}
-      <div className="flex flex-col items-center sm:flex-row justify-around mx-5 gap-5 h-96">
+      <div className="flex flex-col items-center sm:flex-row justify-around mx-5 gap-5 h-96 mt-5 sm:mt-20">
         <div className="basis-1/2 w-85">
           <Cards2 />
         </div>
