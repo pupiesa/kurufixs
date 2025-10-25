@@ -13,42 +13,34 @@ export default async function StatusDetailPage({
 }: StatusDetailPageProps) {
   const { id } = await params;
 
-  const status = await prisma.repairReport.findUnique({
+  const asset = await prisma.asset.findUnique({
     where: { id },
     select: {
       id: true,
-      issueTitle: true,
-      issueDescription: true,
-      urgency: true,
-      createdAt: true,
-      updatedAt: true,
-      status: true,
-      asset: {
-        select: {
-          assetName: true,
-          location: { select: { room: true, building: true } },
-        },
-      },
+      assetName: true,
+      location: { select: { room: true, building: true } },
+      assetCode: true,
+      status: { select: { name: true } },
+      type: { select: { name: true } },
     },
   });
 
-  if (!status) return notFound();
-  const location = status.asset?.location;
+  if (!asset) return notFound();
+  const location = asset.location;
   return (
     <div className="container mx-auto py-10">
       <Button>
         <SquareArrowLeft />
-        <Link href="/status">Back to Status List</Link>
+        <Link href="/assets">Back to Asset List</Link>
       </Button>
-      <div>{status.id}</div>
-      <div>{status.asset?.assetName}</div>
-      <div>{`${location?.building ?? ""}${location?.room ?? ""}`}</div>
-      <div>{status.issueTitle}</div>
-      <div>{status.issueDescription}</div>
-      <div>{status.urgency}</div>
-      <div>{status.createdAt.toLocaleString()}</div>
-      <div>{status.updatedAt.toLocaleString()}</div>
-      <div>{status.status}</div>
+      <div>ID: {asset.id}</div>
+      <div>Asset Name: {asset.assetName}</div>
+      <div>Asset Code: {asset.assetCode}</div>
+      <div>
+        Location: {`${location?.building ?? ""} ${location?.room ?? ""}`}
+      </div>
+      <div>Status: {asset.status?.name ?? ""}</div>
+      <div>Type: {asset.type?.name ?? ""}</div>
     </div>
   );
 }

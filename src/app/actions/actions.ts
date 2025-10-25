@@ -78,8 +78,106 @@ export async function updateTicketAction(formData: FormData): Promise<void> {
 
     revalidatePath(`/staff/${ticketId}`);
     revalidatePath("/staff");
-    redirect(`/staff/${ticketId}?updated=1`);
   } catch (e: any) {
     console.error("updateTicketAction error", e);
+    return;
   }
+
+  // Perform redirect outside try/catch so NEXT_REDIRECT isn't swallowed
+  redirect(`/staff`);
+}
+
+export async function updateAssetAction(formData: FormData): Promise<void> {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  const assetId = (formData.get("assetId") ?? "").toString();
+  // Debug log: indicate action called (visible in server terminal)
+  console.log("updateAssetAction called", { userId, assetId });
+
+  if (!userId) {
+    // Not authenticated - redirect to sign in (keeps control-flow outside try/catch)
+    redirect(`/auth?next=/assets&error=not_authenticated`);
+  }
+
+  const assetName = (formData.get("assetName") ?? "").toString().trim();
+  const assetCode = (formData.get("assetCode") ?? "").toString().trim();
+  const typeName = (formData.get("typeName") ?? "").toString().trim();
+  const statusName = (formData.get("statusName") ?? "").toString().trim();
+  const building = (formData.get("building") ?? "").toString().trim();
+  const room = (formData.get("room") ?? "").toString().trim();
+
+  if (!assetId) return;
+
+  // Ensure requester is admin (re-check from DB for freshness)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (dbUser?.role?.name !== "admin") {
+    console.warn("updateAssetAction: forbidden - user is not admin", {
+      userId,
+    });
+    // Redirect to assets with an error flag so the UI can show a message
+    redirect(`/assets?error=forbidden`);
+  }
+
+  try {
+    const data: Record<string, any> = {};
+    if (assetName) data.assetName = assetName;
+    if (assetCode) data.assetCode = assetCode;
+
+    // Upsert type and status by name (assumes name has a unique constraint)
+    if (typeName) {
+      const t = await prisma.assetType.upsert({
+        where: { name: typeName },
+        create: { name: typeName },
+        update: { name: typeName },
+      });
+      data.typeId = t.id;
+    }
+
+    if (statusName) {
+      const s = await prisma.assetStatus.upsert({
+        where: { name: statusName },
+        create: { name: statusName },
+        update: { name: statusName },
+      });
+      data.statusId = s.id;
+    }
+
+    // Handle location: try to find existing or create new
+    if (building || room) {
+      const existing = await prisma.location.findFirst({
+        where: { building: building || undefined, room: room || undefined },
+      });
+      if (existing) {
+        data.locationId = existing.id;
+      } else {
+        const loc = await prisma.location.create({
+          data: { building: building || "", room: room || "" },
+        });
+        data.locationId = loc.id;
+      }
+    }
+
+    // If there's nothing to update, stop
+    if (Object.keys(data).length === 0) return;
+
+    await prisma.asset.update({ where: { id: assetId }, data });
+
+    // Revalidate relevant pages
+    revalidatePath(`/assets/${assetId}`);
+    revalidatePath(`/assets`);
+    console.log("updateAssetAction: asset updated", {
+      assetId,
+      updatedFields: Object.keys(data),
+    });
+  } catch (e: any) {
+    console.error("updateAssetAction error", e);
+    return;
+  }
+
+  // Redirect to assets list after successful update (include flag)
+  redirect(`/assets?updated=1`);
 }

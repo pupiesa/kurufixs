@@ -1,5 +1,6 @@
-import { columns } from "@/app/assets/columns";
-import { DataTable } from "@/components/data-table";
+"use server";
+import { AssetTable } from "./asset-table";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export type AssetRow = {
@@ -17,6 +18,10 @@ async function getData(): Promise<AssetRow[]> {
       id: true,
       assetCode: true,
       assetName: true,
+      brand: true,
+      model: true,
+      serialNo: true,
+      purchaseDate: true,
       status: { select: { name: true } },
       location: { select: { room: true, building: true } },
       type: true,
@@ -29,6 +34,10 @@ async function getData(): Promise<AssetRow[]> {
     id: r.id,
     assetCode: r.assetCode,
     assetName: r.assetName,
+    brand: r.brand,
+    model: r.model,
+    serialNo: r.serialNo,
+    purchaseDate: r.purchaseDate,
     location: `${r.location?.building ?? ""} ${r.location?.room ?? "-"}`,
     status: r.status?.name ?? "",
     type: r.type?.name ?? "",
@@ -36,10 +45,12 @@ async function getData(): Promise<AssetRow[]> {
 }
 
 export default async function AssetPage() {
+  const session = await auth();
+  const userRole = session?.user?.role;
   const data = await getData();
   return (
-    <div className="container mx-auto py-10">
-      <DataTable columns={columns} data={data} />
+    <div className="container mx-auto py-10 px-5">
+      <AssetTable data={data} userRole={userRole} />
     </div>
   );
 }

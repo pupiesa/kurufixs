@@ -25,7 +25,6 @@ interface TicketPageProps {
 
 export default async function TicketPage({ params }: TicketPageProps) {
   const { id } = await params;
-  const session = await auth();
 
   const ticket = await prisma.repairReport.findUnique({
     where: { id },
@@ -177,6 +176,7 @@ export default async function TicketPage({ params }: TicketPageProps) {
                   className="min-h-24"
                 />
               </div>
+              {/* after done redirect to /staff */}
               <Button type="submit">Update Ticket</Button>
             </form>
           </div>
