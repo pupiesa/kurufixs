@@ -1,10 +1,17 @@
 "use client";
-import type { User } from "@prisma/client";
+
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { updateProfileAction } from "../actions/actions";
 
-const Form = (props: { user: User }) => {
+type AccountUser = {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  username?: string | null;
+};
+
+const Form = (props: { user: AccountUser }) => {
   const { user } = props;
   const User = props.user;
   const router = useRouter();
