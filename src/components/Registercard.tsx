@@ -43,7 +43,7 @@ export function Registercard() {
     if (!res.ok) {
       setLoading(false);
       setErr(
-        (await res.json().catch(() => ({})))?.message || "Registration failed",
+        (await res.json().catch(() => ({})))?.message || "Registration failed"
       );
       return;
     }
