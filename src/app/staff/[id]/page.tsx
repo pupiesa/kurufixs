@@ -1,7 +1,6 @@
 import { SquareArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import React from "react";
 import { updateTicketAction } from "@/app/actions/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -150,7 +148,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
             <form action={updateTicketAction} className="space-y-4">
               <input type="hidden" name="ticketId" value={ticket.id} />
               <div>
-                <label className="font-medium text-sm mb-2 block">
+                <label
+                  htmlFor="status"
+                  className="font-medium text-sm mb-2 block"
+                >
                   New Status
                 </label>
                 <Select name="status" defaultValue={ticket.status}>
@@ -167,7 +168,10 @@ export default async function TicketPage({ params }: TicketPageProps) {
                 </Select>
               </div>
               <div>
-                <label className="font-medium text-sm mb-2 block">
+                <label
+                  className="font-medium text-sm mb-2 block"
+                  htmlFor="message"
+                >
                   Activity Message
                 </label>
                 <Textarea

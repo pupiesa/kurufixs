@@ -61,8 +61,8 @@ const UserCard = (props: { user: SimpleUser[] }) => {
                             name: newRole ?? undefined,
                           },
                         }
-                      : u
-                  )
+                      : u,
+                  ),
                 )
               }
             />
@@ -70,7 +70,7 @@ const UserCard = (props: { user: SimpleUser[] }) => {
               type="delete"
               onUpdated={(_newRole?: string, deletedId?: string) =>
                 setUsers((prev) =>
-                  prev.filter((u) => u.id !== (deletedId ?? usr.id))
+                  prev.filter((u) => u.id !== (deletedId ?? usr.id)),
                 )
               }
               id={usr.id}

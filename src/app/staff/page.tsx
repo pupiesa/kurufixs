@@ -1,7 +1,6 @@
 import { columns } from "@/app/staff/columns";
 import { DataTable } from "@/components/data-table";
 import { prisma } from "@/lib/db";
-import RepairReport from "../reports/page";
 
 export type AssetRow = {
   id: string; // ticket ID

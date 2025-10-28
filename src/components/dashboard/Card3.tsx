@@ -1,5 +1,5 @@
 import ProgressBar from "@/components/dashboard/ProgressBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/db";
 
 const Cards = async () => {

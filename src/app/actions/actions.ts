@@ -1,9 +1,11 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+
 // Prisma enum types may not always be available at build-time in some environments
 // Define a local type that mirrors the `ReportStatus` enum in Prisma schema.
 type ReportStatus = "PENDING" | "IN_PROGRESS" | "FIXED" | "CLOSED";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";

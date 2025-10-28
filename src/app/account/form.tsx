@@ -16,17 +16,15 @@ const Form = (props: { user: AccountUser }) => {
   const User = props.user;
   const router = useRouter();
 
-  const handleRefresh = () => {
+  const _handleRefresh = () => {
     router.refresh();
   };
   return (
-    <form
-      action={updateProfileAction}
-      onClick={handleRefresh}
-      className="space-y-4"
-    >
+    <form action={updateProfileAction} className="space-y-4">
       <div>
-        <label className="font-bold">Name</label>
+        <label htmlFor="name" className="font-bold">
+          Name
+        </label>
         <input
           name="name"
           className="border-2 border-foreground rounded-md p-2 w-full"
@@ -36,7 +34,9 @@ const Form = (props: { user: AccountUser }) => {
         />
       </div>
       <div>
-        <label className="font-bold">Email</label>
+        <label htmlFor="email" className="font-bold">
+          Email
+        </label>
         <input
           name="email"
           className="border-2 border-foreground rounded-md p-2 w-full"
@@ -48,7 +48,9 @@ const Form = (props: { user: AccountUser }) => {
         />
       </div>
       <div>
-        <label className="font-bold">Username</label>
+        <label htmlFor="username" className="font-bold">
+          Username
+        </label>
         <input
           name="username"
           className="border-2 border-foreground rounded-md p-2 w-full"
@@ -65,7 +67,9 @@ const Form = (props: { user: AccountUser }) => {
         )}
       </div>
       <div>
-        <label className="font-bold">New Password</label>
+        <label htmlFor="password" className="font-bold">
+          New Password
+        </label>
         <input
           name="password"
           className="border-2 border-foreground rounded-md p-2 w-full"
@@ -74,7 +78,9 @@ const Form = (props: { user: AccountUser }) => {
         />
       </div>
       <div>
-        <label className="font-bold">Confirm New Password</label>
+        <label htmlFor="confirmPassword" className="font-bold">
+          Confirm New Password
+        </label>
         <input
           name="confirmPassword"
           className="border-2 border-foreground rounded-md p-2 w-full"

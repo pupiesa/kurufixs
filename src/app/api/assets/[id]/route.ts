@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   // `params` can be a Promise in some Next.js types; await to get the actual params

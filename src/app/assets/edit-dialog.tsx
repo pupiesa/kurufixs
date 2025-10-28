@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { updateAssetAction } from "@/app/actions/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +60,7 @@ export function EditDialog(props: { data: any }) {
           </DialogDescription>
         </DialogHeader>
         <form action={updateAssetAction}>
-          <input type="hidden" name="assetId" value={(data && data.id) || ""} />
+          <input type="hidden" name="assetId" value={data?.id || ""} />
 
           <div className="grid gap-4">
             <div className="grid gap-3">
