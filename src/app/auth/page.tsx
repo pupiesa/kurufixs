@@ -1,3 +1,4 @@
+// app/auth/page.tsx (server component)
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Logincard } from "@/components/Logincard";
@@ -6,13 +7,13 @@ import { auth } from "@/lib/auth";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const params = await searchParams;
   const session = await auth();
   if (session?.user) redirect("/");
 
-  const error = typeof params?.error === "string" ? params.error : undefined;
+  const error =
+    typeof searchParams?.error === "string" ? searchParams.error : undefined;
 
   return (
     <main className="flex min-h-screen items-center justify-center flex-col">
@@ -29,16 +30,10 @@ export default async function LoginPage({
       >
         <h1 className="text-7xl font-bold my-5 text-center">Kuru fix V.2</h1>
         <Logincard />
-
         {error === "AccessDenied" && (
           <div
-            style={{
-              background: "#fff3f3",
-              color: "#b00020",
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-            }}
+            className="mb-4 rounded-lg"
+            style={{ background: "#fff3f3", color: "#b00020", padding: 12 }}
           >
             Only @kmitl.ac.th accounts are allowed.
           </div>
