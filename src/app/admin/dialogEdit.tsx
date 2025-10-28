@@ -27,7 +27,7 @@ interface DialogEditProps {
   type: string;
   role?: string;
   id?: string;
-  onUpdated?: (newRole: string, id: string) => void;
+  onUpdated?: (newRole?: string, id?: string) => void;
 }
 
 const DialogEdit = (props: DialogEditProps) => {
@@ -36,12 +36,11 @@ const DialogEdit = (props: DialogEditProps) => {
   const id = props.id;
   const onUpdated = props.onUpdated;
   const [value, setValue] = React.useState(role);
-  const [values, setValues] = React.useState(id);
   return (
     <div className="flex-1">
       <Dialog>
         <DialogTrigger asChild>
-          {types == "edit" ? (
+          {types === "edit" ? (
             <Button type="button" variant="outline" className="w-full">
               <Pencil />
               Edit User role
@@ -59,7 +58,8 @@ const DialogEdit = (props: DialogEditProps) => {
                     body: JSON.stringify({ userId: id }),
                   });
                   if (res.ok) {
-                    onUpdated?.(values as string, id as string);
+                    // inform parent that the user with `id` was deleted
+                    onUpdated?.(undefined, id as string);
                   } else {
                     const j = await res.json().catch(() => ({}));
                     console.error("Failed to delete user", j);
@@ -78,7 +78,7 @@ const DialogEdit = (props: DialogEditProps) => {
             </Button>
           )}
         </DialogTrigger>
-        {types == "edit" ? (
+        {types === "edit" ? (
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit User Role</DialogTitle>

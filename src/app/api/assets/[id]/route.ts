@@ -1,9 +1,9 @@
-import { NextResponse, NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   // `params` can be a Promise in some Next.js types; await to get the actual params
   const { id } = await params;
@@ -16,13 +16,13 @@ export async function DELETE(
     });
     return NextResponse.json(
       { message: "Asset deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error deleting Asset:", error);
     return NextResponse.json(
       { error: "Failed to delete Asset" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

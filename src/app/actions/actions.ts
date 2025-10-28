@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import type { ReportStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -43,7 +44,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
     await prisma.user.update({ where: { id: userId }, data });
     revalidatePath("/account");
     redirect("/account?updated=1");
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("updateProfileAction error", e);
   }
 }
@@ -63,7 +64,7 @@ export async function updateTicketAction(formData: FormData): Promise<void> {
     // Update ticket status
     await prisma.repairReport.update({
       where: { id: ticketId },
-      data: { status: newStatus as any },
+      data: { status: newStatus as ReportStatus },
     });
 
     // Log activity
@@ -78,7 +79,7 @@ export async function updateTicketAction(formData: FormData): Promise<void> {
 
     revalidatePath(`/staff/${ticketId}`);
     revalidatePath("/staff");
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("updateTicketAction error", e);
     return;
   }
@@ -123,7 +124,7 @@ export async function updateAssetAction(formData: FormData): Promise<void> {
   }
 
   try {
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
     if (assetName) data.assetName = assetName;
     if (assetCode) data.assetCode = assetCode;
 
@@ -173,7 +174,7 @@ export async function updateAssetAction(formData: FormData): Promise<void> {
       assetId,
       updatedFields: Object.keys(data),
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("updateAssetAction error", e);
     return;
   }
