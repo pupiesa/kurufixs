@@ -9,18 +9,34 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const role = (token as any)?.role ?? null;
 
-  if (pathname === "/" && !token) {
-    // If there's a NextAuth cookie present but getToken failed to verify it
-    // (for example when NEXTAUTH_SECRET is missing in the deployment),
-    // don't immediately redirect to /auth — let the auth page handle the session
-    // to avoid redirect loops between `/` and `/auth`.
+  // Diagnostic logging and extra guards to prevent redirect loops between `/` and `/auth`.
+  try {
     const cookieHeader = req.headers.get("cookie") || "";
-    if (cookieHeader.includes("next-auth")) {
-      // Allow request to continue; the auth page or client can resolve the session
-      return NextResponse.next();
-    }
+    const referer = req.headers.get("referer") || "";
+    const hasNextAuthCookie = cookieHeader.includes("next-auth");
+    console.log(
+      "middleware: path=",
+      pathname,
+      "tokenPresent=",
+      Boolean(token),
+      "hasNextAuthCookie=",
+      hasNextAuthCookie,
+      "referer=",
+      referer
+    );
 
-    return NextResponse.redirect(new URL("/auth", req.url));
+    if (pathname === "/" && !token) {
+      // If the referer is the auth page or a next-auth cookie exists, allow the request
+      // so the auth page can inspect and re-establish the session, breaking redirect loops.
+      if (hasNextAuthCookie || referer.includes("/auth")) {
+        return NextResponse.next();
+      }
+
+      return NextResponse.redirect(new URL("/auth", req.url));
+    }
+  } catch (err) {
+    // Don't block requests if logging fails
+    console.error("middleware diagnostics error", err);
   }
 
   if (pathname.startsWith("/admin")) {

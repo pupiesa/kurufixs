@@ -22,7 +22,24 @@ export default async function LoginPage({
   } catch (e) {
     console.error("AUTH_ERROR /auth:", e);
   }
-  if (session?.user) redirect("/");
+  // If already signed in, render a small confirmation instead of forcing a redirect.
+  // This prevents a redirect loop when middleware and the auth page disagree about
+  // whether the session is valid (for example during cookie/secret mismatch).
+  if (session?.user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center flex-col">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">You are already signed in</h2>
+          <p className="mb-4">
+            If you were redirected here by mistake, click below to go home.
+          </p>
+          <a href="/" className="text-sm text-blue-600 underline">
+            Go to dashboard
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center flex-col">
