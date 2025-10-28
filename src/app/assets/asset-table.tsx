@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -31,6 +32,7 @@ interface AssetTableProps {
 }
 
 export function AssetTable({ data, userRole }: AssetTableProps) {
+  const [localData, setLocalData] = React.useState<AssetRow[]>(data ?? []);
   const columns = [...baseColumns];
   if (userRole === "admin") {
     columns.push({
@@ -40,8 +42,29 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
         <div className="flex gap-2">
           {/* Edit button (opens dialog) */}
           <EditDialog data={row.original} />
-          {/* Delete / destructive action - TODO: wire to server delete action */}
-          <Button variant="destructive" size="sm">
+          {/* Delete / destructive action */}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+              if (!confirm("Delete this asset?")) return;
+              try {
+                const res = await fetch(`/api/assets/${row.original.id}`, {
+                  method: "DELETE",
+                });
+                if (res.ok) {
+                  // remove from local UI
+                  setLocalData((prev) =>
+                    prev.filter((d) => d.id !== row.original.id)
+                  );
+                } else {
+                  console.error("Failed to delete asset:", await res.json());
+                }
+              } catch (err) {
+                console.error("Error deleting asset", err);
+              }
+            }}
+          >
             <Trash2 />
           </Button>
         </div>
@@ -49,5 +72,5 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
     });
   }
 
-  return <DataTable columns={columns} data={data} />;
+  return <DataTable columns={columns} data={localData} />;
 }

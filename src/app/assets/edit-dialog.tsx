@@ -20,9 +20,6 @@ import { updateAssetAction } from "@/app/actions/actions";
 export function EditDialog(props: { data: any }) {
   const data = props.data;
 
-  // console.log on client side (browser)
-  // eslint-disable-next-line no-console
-  console.log("EditDialog data:", data);
   const [types, setTypes] = useState<{ id: string; name: string }[]>([]);
   const [statuses, setStatuses] = useState<{ id: string; name: string }[]>([]);
 
@@ -93,7 +90,6 @@ export function EditDialog(props: { data: any }) {
                   defaultValue={data?.type?.name ?? data?.type ?? ""}
                   className="input"
                 >
-                  <option value="">(none)</option>
                   {types.map((t) => (
                     <option key={t.id} value={t.name}>
                       {t.name}
@@ -119,7 +115,6 @@ export function EditDialog(props: { data: any }) {
                 defaultValue={data?.status?.name ?? data?.status ?? ""}
                 className="input"
               >
-                <option value="">(none)</option>
                 {statuses.map((s) => (
                   <option key={s.id} value={s.name}>
                     {s.name}

@@ -91,11 +91,12 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
     }
   }, [session?.user?.id, form]);
 
-  const selectedAsset = useMemo<AssetOption | undefined>(
-    () => assets.find((a: AssetOption) => a.id === form.watch("assetId")),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [assets, form.watch]
-  );
+  // Watch the selected asset id so selectedAsset updates when the user picks
+  // a different item. Use form.watch('assetId') as a dependency for useMemo.
+  const watchedAssetId = form.watch("assetId");
+  const selectedAsset = useMemo<AssetOption | undefined>(() => {
+    return assets.find((a: AssetOption) => a.id === watchedAssetId);
+  }, [assets, watchedAssetId]);
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
