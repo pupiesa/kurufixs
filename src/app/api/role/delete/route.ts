@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
 import { auth } from "@/lib/auth";
+import prisma from "@/lib/db";
 
 export async function DELETE(request: Request) {
   try {
@@ -27,7 +27,7 @@ export async function DELETE(request: Request) {
     if (!userId) {
       return NextResponse.json(
         { error: "userId and roleName required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const user = await prisma.user.delete({

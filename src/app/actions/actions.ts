@@ -1,10 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/db";
 
 export async function updateProfileAction(formData: FormData): Promise<void> {
   const session = await auth();

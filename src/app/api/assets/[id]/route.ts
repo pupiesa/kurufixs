@@ -1,11 +1,12 @@
+import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/db";
-import { NextResponse } from "next/server";
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params; // Get the ID from the URL parameter
+  // `params` can be a Promise in some Next.js types; await to get the actual params
+  const { id } = await params;
 
   try {
     await prisma.asset.delete({
@@ -15,13 +16,13 @@ export async function DELETE(
     });
     return NextResponse.json(
       { message: "Asset deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error deleting Asset:", error);
     return NextResponse.json(
       { error: "Failed to delete Asset" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

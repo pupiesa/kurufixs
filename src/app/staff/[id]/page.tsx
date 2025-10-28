@@ -1,6 +1,9 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { SquareArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import React from "react";
+import { updateTicketAction } from "@/app/actions/actions";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,11 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { updateTicketAction } from "@/app/actions/actions";
-import { Badge } from "@/components/ui/badge";
-import React from "react";
-import { SquareArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 

@@ -1,6 +1,8 @@
 "use client";
-import { Button } from "@/components/ui/button";
+
+import { Pencil, Trash2 } from "lucide-react";
 import React from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import {
   Select,
   SelectContent,
@@ -21,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Pencil, Trash2 } from "lucide-react";
 
 interface DialogEditProps {
   type: string;

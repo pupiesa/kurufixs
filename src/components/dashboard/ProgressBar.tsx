@@ -1,6 +1,6 @@
 "use client";
+import type React from "react";
 import { Progress } from "@/components/ui/progress";
-import React from "react";
 
 interface ProgressBarProps {
   value: number;

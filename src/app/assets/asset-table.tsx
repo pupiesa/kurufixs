@@ -1,13 +1,13 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
+import { Trash2 } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { AssetRow } from "./page";
-import { Trash2 } from "lucide-react";
 import { EditDialog } from "./edit-dialog";
+import type { AssetRow } from "./page";
 
 const baseColumns: ColumnDef<AssetRow>[] = [
   { accessorKey: "assetCode", header: "Asset Code" },
@@ -55,7 +55,7 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
                 if (res.ok) {
                   // remove from local UI
                   setLocalData((prev) =>
-                    prev.filter((d) => d.id !== row.original.id)
+                    prev.filter((d) => d.id !== row.original.id),
                   );
                 } else {
                   console.error("Failed to delete asset:", await res.json());

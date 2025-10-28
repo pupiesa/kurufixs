@@ -1,18 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
 import {
   Archive,
   FileText,
   LayoutDashboard,
   LogOut,
   Settings,
+  UserPen,
   UserStar,
   Wrench,
-  UserPen,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +28,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./ui/modetoggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type MenuItem = {
   title: string;

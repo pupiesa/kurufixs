@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import UserCard from "./usercard";
+
 const getData = async () => {
   const users = await prisma.user.findMany({
     where: { role: { name: { not: "admin" } } },

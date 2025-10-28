@@ -1,7 +1,7 @@
 import { columns } from "@/app/status/columns";
 import { DataTable } from "@/components/data-table";
-import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export type ReportRow = {
   id: string;

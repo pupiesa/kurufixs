@@ -1,6 +1,8 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { updateAssetAction } from "@/app/actions/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,8 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil } from "lucide-react";
-import { updateAssetAction } from "@/app/actions/actions";
 
 export function EditDialog(props: { data: any }) {
   const data = props.data;
@@ -132,7 +132,7 @@ export function EditDialog(props: { data: any }) {
                   defaultValue={
                     data?.location?.building ??
                     (typeof data?.location === "string"
-                      ? data.location.split(" ")[0] ?? ""
+                      ? (data.location.split(" ")[0] ?? "")
                       : "")
                   }
                 />
@@ -145,7 +145,7 @@ export function EditDialog(props: { data: any }) {
                   defaultValue={
                     data?.location?.room ??
                     (typeof data?.location === "string"
-                      ? data.location.split(" ")[1] ?? ""
+                      ? (data.location.split(" ")[1] ?? "")
                       : "")
                   }
                 />

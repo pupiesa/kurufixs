@@ -50,12 +50,13 @@ export function Registercard() {
 
     // Auto sign-in with what user provided (prefer username, else email)
     const identifier = username || email;
-    const sig = await signIn("credentials", {
+    // signIn may return different shapes depending on redirect option; cast to any to avoid strict typing issues
+    const sig = (await signIn("credentials", {
       redirect: true,
       callbackUrl: "/",
       identifier,
       password,
-    });
+    })) as any;
     setLoading(false);
     if (sig?.error) setErr("Auto sign-in failed, please try logging in.");
   }

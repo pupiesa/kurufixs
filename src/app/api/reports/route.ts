@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     if (!issueTitle || !issueDescription) {
       return NextResponse.json(
         { message: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       if (!assetId)
         return NextResponse.json(
           { message: "กรุณาเลือกครุภัณฑ์หรือกรอกข้อมูล" },
-          { status: 400 }
+          { status: 400 },
         );
       const asset = await prisma.asset.findUnique({
         where: { id: String(assetId) },
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       if (!asset)
         return NextResponse.json(
           { message: "Asset not found" },
-          { status: 404 }
+          { status: 404 },
         );
       finalAssetId = asset.id;
     } else {

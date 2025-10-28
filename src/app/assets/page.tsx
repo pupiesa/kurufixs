@@ -1,7 +1,7 @@
 "use server";
-import { AssetTable } from "./asset-table";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { AssetTable } from "./asset-table";
 
 export type AssetRow = {
   id: string;

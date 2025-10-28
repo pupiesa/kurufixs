@@ -192,9 +192,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
               size="sm"
               onClick={() => setManualAsset((v) => !v)}
             >
-              {manualAsset
-                ? "เลือกจากรายการครุภัณฑ์"
-                : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
+              {manualAsset ? "เลือกจากรายการครุภัณฑ์" : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
             </Button>
             {!manualAsset && assets.length === 0 && (
               <span className="text-sm text-muted-foreground">

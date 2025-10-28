@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -9,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import Image from "next/image";
 import DialogEdit from "./dialogEdit";
 
 const UserCard = (props: { user: Array<any> }) => {
@@ -48,8 +48,8 @@ const UserCard = (props: { user: Array<any> }) => {
                     prev.map((u) =>
                       u.id === usr.id
                         ? { ...u, role: { ...(u.role ?? {}), name: newRole } }
-                        : u
-                    )
+                        : u,
+                    ),
                   )
                 }
               />

@@ -1,8 +1,8 @@
+import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import React from "react";
 import Form from "./form";
 
 export const runtime = "nodejs";
