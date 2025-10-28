@@ -11,8 +11,6 @@ export default async function Home() {
     select: { status: true },
     where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
   });
-  console.log("assets :", assets);
-  console.log("status :", status.length);
   return (
     <div className="variant-muted color-muted font-sans">
       <div className="flex flex-col w-full items-center">

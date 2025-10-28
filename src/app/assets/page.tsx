@@ -29,7 +29,6 @@ async function getData(): Promise<AssetRow[]> {
     },
     orderBy: { createdAt: "desc" },
   });
-  console.log(asset);
   return asset.map((r) => ({
     id: r.id,
     assetCode: r.assetCode,

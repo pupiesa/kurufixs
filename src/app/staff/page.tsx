@@ -29,7 +29,6 @@ async function getData(): Promise<AssetRow[]> {
     orderBy: { createdAt: "desc" },
   });
   const ticket = await prisma.repairReport.findMany();
-  console.log(asset);
   return ticket.map((t) => {
     const assetItem = asset.find((a) => a.id === t.assetId);
     return {

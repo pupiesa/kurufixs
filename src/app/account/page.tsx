@@ -18,7 +18,6 @@ const Page = async () => {
   const session = await auth();
   const userId = session?.user?.id;
   const user = await getData(userId);
-  console.log(user);
   return (
     <div className="flex justify-center mt-10">
       <Card className="w-100 p-5">
