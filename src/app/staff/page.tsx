@@ -3,6 +3,7 @@ import { DataTable } from "@/components/data-table";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export type AssetRow = {

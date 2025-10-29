@@ -5,6 +5,7 @@ import prisma from "@/lib/db";
 import Form from "./form";
 
 export const runtime = "nodejs";
+export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 async function getData(userId: string | undefined) {
