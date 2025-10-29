@@ -2,6 +2,10 @@ import Cards3 from "@/components/dashboard/Card3";
 import Cards from "@/components/dashboard/Cards";
 import Cards2 from "@/components/dashboard/Cards2";
 import prisma from "@/lib/db";
+
+// Render this page on Node and always fetch fresh data from the DB.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export default async function Home() {
   const assets = await prisma.asset.findMany({
     select: { id: true },

@@ -1,6 +1,9 @@
 import Reportform from "@/components/reportform";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export default async function RepairReport() {
   const assets = await prisma.asset.findMany({
     select: { id: true, assetCode: true, assetName: true },

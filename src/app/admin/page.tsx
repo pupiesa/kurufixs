@@ -3,6 +3,7 @@ import UserCard from "./usercard";
 
 // Ensure this page runs on the Node.js runtime so Prisma Client can be used
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const getData = async () => {
   try {

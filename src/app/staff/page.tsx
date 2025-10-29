@@ -2,6 +2,9 @@ import { columns } from "@/app/staff/columns";
 import { DataTable } from "@/components/data-table";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export type AssetRow = {
   id: string; // ticket ID
   assetName: string;

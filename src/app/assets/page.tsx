@@ -1,6 +1,10 @@
 "use server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+// Ensure Prisma runs on Node and always fetch fresh data
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 import { AssetTable } from "./asset-table";
 
 export type AssetRow = {
