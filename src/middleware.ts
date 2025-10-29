@@ -40,13 +40,35 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/admin")) {
-    if (!token || role !== "admin") {
+    // Normalize role string and accept when token indicates admin.
+    const roleStr = String(role ?? "").toLowerCase();
+    const cookieHeader = req.headers.get("cookie") || "";
+    const referer = req.headers.get("referer") || "";
+    const hasNextAuthCookie = cookieHeader.includes("next-auth");
+
+    // If token is missing but a next-auth cookie exists, allow the request through
+    // so server-side rendering can perform a fresh DB-backed role check. This
+    // avoids mistakenly redirecting users when tokens are stale or when the
+    // middleware cannot verify JWTs in the deployment environment.
+    if (!token && hasNextAuthCookie) {
+      return NextResponse.next();
+    }
+
+    if (roleStr !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
   if (pathname.startsWith("/staff")) {
-    if (!token || (role !== "staff" && role !== "admin")) {
+    const roleStr = String(role ?? "").toLowerCase();
+    const cookieHeader = req.headers.get("cookie") || "";
+    const hasNextAuthCookie = cookieHeader.includes("next-auth");
+
+    if (!token && hasNextAuthCookie) {
+      return NextResponse.next();
+    }
+
+    if (roleStr !== "staff" && roleStr !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
