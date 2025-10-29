@@ -1,20 +1,30 @@
 import prisma from "@/lib/db";
 import UserCard from "./usercard";
 
+// Ensure this page runs on the Node.js runtime so Prisma Client can be used
+export const runtime = "nodejs";
+
 const getData = async () => {
-  const users = await prisma.user.findMany({
-    where: { role: { name: { not: "admin" } } },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      username: true,
-      role: { select: { name: true } },
-    },
-  });
-  return users;
+  try {
+    const users = await prisma.user.findMany({
+      where: { role: { name: { not: "admin" } } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        username: true,
+        role: { select: { name: true } },
+      },
+    });
+    return users;
+  } catch (err) {
+    // Log server-side so Vercel function logs show the error
+    console.error("AdminPage.getData error:", err);
+    return [];
+  }
 };
+
 const AdminPage = async () => {
   const users = await getData();
   return (
