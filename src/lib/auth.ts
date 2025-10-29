@@ -112,9 +112,21 @@ const authSetup = NextAuth({
         }
         // Auto-assign viewer role if user doesn't have one
         try {
-          if (user.id) {
+          // NextAuth may or may not include `user.id` here depending on the
+          // provider/version. If it's missing, try to find the user by email.
+          let targetUserId: string | null = null;
+          if (user.id) targetUserId = user.id;
+          else if (user.email) {
+            const dbu = await prisma.user.findUnique({
+              where: { email: user.email },
+              select: { id: true, roleId: true },
+            });
+            if (dbu) targetUserId = dbu.id;
+          }
+
+          if (targetUserId) {
             const existingUser = await prisma.user.findUnique({
-              where: { id: user.id },
+              where: { id: targetUserId },
               select: { roleId: true },
             });
 
@@ -135,7 +147,7 @@ const authSetup = NextAuth({
 
               // Assign viewer role to user
               await prisma.user.update({
-                where: { id: user.id },
+                where: { id: targetUserId },
                 data: { roleId: viewerRole.id },
               });
             }
