@@ -77,5 +77,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/admin/:path*", "/staff/:path*"],
+  // Only match the root path at the edge. Disable edge-level protection for
+  // /admin and /staff to avoid redirect loops when JWT verification fails in
+  // certain deployment environments. Server-side pages/actions still perform
+  // DB-backed role checks and will enforce authorization.
+  matcher: ["/"],
 };
