@@ -55,47 +55,49 @@ export function Logincard() {
           </Link>
         </CardAction>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit}>
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="identifier">Email or Username</Label>
-              <Input
-                id="identifier"
-                name="identifier"
-                type="text"
-                placeholder="you@kmitl.ac.th or username"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <a
-                  href="/"
-                  className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                >
-                  Forgot your password?
-                </a>
+      <CardContent className="w-full">
+        <div className="w-full">
+          <form onSubmit={onSubmit}>
+            <div className="flex flex-col gap-6 px-10">
+              <div className="grid gap-2">
+                <Label htmlFor="identifier">Email or Username</Label>
+                <Input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  placeholder="you@kmitl.ac.th or username"
+                  required
+                />
               </div>
-              <Input id="password" name="password" type="password" required />
+              <div className="grid gap-2">
+                <div className="flex items-center">
+                  <Label htmlFor="password">Password</Label>
+                  <a
+                    href="/"
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
+                <Input id="password" name="password" type="password" required />
+              </div>
+              {err && <p className="text-sm text-red-600">{err}</p>}
             </div>
-            {err && <p className="text-sm text-red-600">{err}</p>}
-          </div>
-          <CardFooter className="flex-col gap-2 px-0 pt-6">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full mt-1"
-              type="button"
-              onClick={() => signIn("google", { callbackUrl: "/" })}
-            >
-              Login with Google
-            </Button>
-          </CardFooter>
-        </form>
+            <CardFooter className="flex-col gap-2 px-8 pt-6">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full mt-1"
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+              >
+                Login with Google
+              </Button>
+            </CardFooter>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );

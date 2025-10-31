@@ -43,7 +43,7 @@ export function Registercard() {
     if (!res.ok) {
       setLoading(false);
       setErr(
-        (await res.json().catch(() => ({})))?.message || "Registration failed",
+        (await res.json().catch(() => ({})))?.message || "Registration failed"
       );
       return;
     }
@@ -74,9 +74,9 @@ export function Registercard() {
           </Link>
         </CardAction>
       </CardHeader>
-      <CardContent>
+      <CardContent className="w-full">
         <form onSubmit={onSubmit}>
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col px-10 gap-6">
             <div className="grid gap-2">
               <Label htmlFor="name">Full name</Label>
               <Input
@@ -110,7 +110,7 @@ export function Registercard() {
             </div>
             {err && <p className="text-sm text-red-600">{err}</p>}
           </div>
-          <CardFooter className="flex-col gap-2 px-0 pt-6">
+          <CardFooter className="flex-col gap-2 px-8 pt-6">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Creating..." : "Create account"}
             </Button>
