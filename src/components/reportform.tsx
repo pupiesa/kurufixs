@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
 type AssetOption = { id: string; assetCode: string; assetName: string };
@@ -64,6 +65,38 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
   const { data: session } = useSession();
   const [submitting, setSubmitting] = useState(false);
   const [manualAsset, setManualAsset] = useState(false);
+  const [assetTypes, setAssetTypes] = useState<string[]>([]);
+  const [typesLoading, setTypesLoading] = useState(false);
+
+  // Load asset types from the server when user toggles manualAsset (we need types only for manual entries)
+  useEffect(() => {
+    let mounted = true;
+    if (!manualAsset) return;
+    async function loadTypes() {
+      setTypesLoading(true);
+      try {
+        const res = await fetch("/api/assets/meta");
+        if (!res.ok) {
+          console.error("/api/assets/meta returned", res.status);
+          return;
+        }
+        const j = await res.json().catch(() => ({} as any));
+        if (!mounted) return;
+        const names = (j.types ?? [])
+          .map((t: any) => String(t.name))
+          .filter(Boolean);
+        setAssetTypes(names);
+      } catch (e) {
+        console.error("failed to load asset types", e);
+      } finally {
+        if (mounted) setTypesLoading(false);
+      }
+    }
+    loadTypes();
+    return () => {
+      mounted = false;
+    };
+  }, [manualAsset]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
@@ -138,8 +171,28 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
         {/* 1) ข้อมูลครุภัณฑ์ */}
         <div className="space-y-2">
           <h3 className="font-semibold">ข้อมูลครุภัณฑ์</h3>
-          {!manualAsset && (
-            <>
+
+          <Tabs
+            value={manualAsset ? "manual" : "select"}
+            onValueChange={(v) => {
+              const isManual = v === "manual";
+              setManualAsset(isManual);
+              if (isManual) {
+                form.setValue("assetId", undefined, { shouldValidate: true });
+              } else {
+                form.setValue("assetCodeManual", "", { shouldValidate: false });
+                form.setValue("assetNameManual", "", { shouldValidate: true });
+                form.setValue("assetTypeName", "", { shouldValidate: false });
+              }
+            }}
+            className="space-y-4"
+          >
+            <TabsList>
+              <TabsTrigger value="select">เลือกจากรายการครุภัณฑ์</TabsTrigger>
+              <TabsTrigger value="manual">แจ้งโดยไม่มีรายการครุภัณฑ์</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="select" className="space-y-4">
               <FormField
                 control={form.control}
                 name="assetId"
@@ -180,29 +233,10 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                   <Input value={selectedAsset?.assetName ?? ""} readOnly />
                 </div>
               </div>
-            </>
-          )}
+            </TabsContent>
 
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setManualAsset((v) => !v)}
-            >
-              {manualAsset
-                ? "เลือกจากรายการครุภัณฑ์"
-                : "แจ้งโดยไม่มีรายการครุภัณฑ์"}
-            </Button>
-            {!manualAsset && assets.length === 0 && (
-              <span className="text-sm text-muted-foreground">
-                ไม่มีข้อมูลครุภัณฑ์ ให้กรอกข้อมูลครุภัณฑ์ด้านล่าง
-              </span>
-            )}
-          </div>
-
-          {manualAsset && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TabsContent value="manual" className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="assetCodeManual"
@@ -236,7 +270,38 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                   <FormItem>
                     <FormLabel>ประเภทครุภัณฑ์ (ถ้ามี)</FormLabel>
                     <FormControl>
-                      <Input placeholder="เช่น ครุภัณฑ์อื่นๆ" {...field} />
+                      {/* Replace free-text input with a Select populated from the DB */}
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="เลือกประเภท (หรือเว้นว่าง)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {/* default fallback option used by server if left empty */}
+                          <SelectItem value="ครุภัณฑ์อื่นๆ">
+                            (เว้นว่าง / ครุภัณฑ์อื่นๆ)
+                          </SelectItem>
+                          {assetTypes.length === 0 && !typesLoading && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              ไม่มีประเภทครุภัณฑ์ในระบบ
+                            </div>
+                          )}
+                          {typesLoading && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              กำลังโหลดประเภท...
+                            </div>
+                          )}
+                          {assetTypes.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -270,7 +335,8 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                 )}
               />
             </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* 2) รายละเอียดปัญหา */}
