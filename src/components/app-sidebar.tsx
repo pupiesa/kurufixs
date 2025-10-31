@@ -9,8 +9,10 @@ import {
   UserPen,
   UserStar,
   Wrench,
+  SquarePlus,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,34 +37,55 @@ type MenuItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-function Navlist() {
+function useRole() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role ?? null;
+  return (session?.user as any)?.role ?? null; // "user" | "staff" | "admin" | null
+}
 
-  const items: MenuItem[] = [
-    { title: "Dashboard", url: "/", icon: LayoutDashboard },
-    { title: "Status", url: "/status", icon: Wrench },
-    { title: "Reports", url: "/reports", icon: FileText },
-    { title: "Assets", url: "/assets", icon: Archive },
-    { title: "Account", url: "/account", icon: Settings },
-  ];
-  // staff sidebar nav list
-  if (role === "staff" || role === "admin") {
-    // items.splice(2, 1);
-    // items.splice(1, 1);
-    items.push({ title: "Ticket Management", url: "/staff", icon: UserStar });
-  }
-  if (role === "admin") {
-    items.push({ title: "Admin Panel", url: "/admin", icon: UserPen });
-  }
+function BrandHeader() {
+  const { state } = useSidebar();
+  return (
+    <div className="px-3 py-3 border-b">
+      <Link href="/" className="flex items-center gap-2" aria-label="Kurufix Home">
+        <Image
+          src="/sta.png"
+          alt="Kurufix"
+          width={32}
+          height={32}
+          priority
+          className="rounded-xl object-contain"
+        />
+        {state !== "collapsed" && (
+          <div className="text-sm font-semibold tracking-wide">
+            <span className="text-orange-500">K</span>urufix
+          </div>
+        )}
+      </Link>
+    </div>
+  );
+}
+
+function NavSection({
+  label,
+  items,
+}: {
+  label: string;
+  items: MenuItem[];
+}) {
+  const pathname = usePathname();
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
+
+  if (!items.length) return null;
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Kurufix</SidebarGroupLabel>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={isActive(item.url)}>
                 <Link href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>
@@ -76,9 +99,46 @@ function Navlist() {
   );
 }
 
+function Navlist() {
+  const role = useRole();
+
+  // ----- User -----
+  const userItems: MenuItem[] = [
+    { title: "Dashboard", url: "/", icon: LayoutDashboard },
+    { title: "Status", url: "/status", icon: Wrench },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Assets", url: "/assets", icon: Archive },
+    { title: "Account", url: "/account", icon: Settings },
+  ];
+
+  // ----- Staff and admin  tools ) -----
+  const staffItems: MenuItem[] =
+    role === "staff" || role === "admin"
+      ? [{ title: "Ticket Management", url: "/staff", icon: UserStar }]
+      : [];
+
+  // ----- Admin  -----
+  const adminItems: MenuItem[] =
+    role === "admin"
+      ? [
+          { title: "User Management", url: "/admin", icon: UserPen },
+          { title: "Add Kurupan", url: "", icon: SquarePlus },
+        ]
+      : [];
+
+  return (
+    <>
+      <NavSection label="User" items={userItems} />
+      <NavSection label="Staff tools" items={staffItems} />
+      <NavSection label="Admin" items={adminItems} />
+    </>
+  );
+}
+
 function SidebarFooters() {
   const { data: session } = useSession();
   const { state } = useSidebar();
+
   return (
     <SidebarFooter className="border-t pt-2">
       <div className="flex items-center gap-2 px-2 py-1.5">
@@ -125,6 +185,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
+        <BrandHeader />
         <Navlist />
       </SidebarContent>
       <SidebarFooters />
