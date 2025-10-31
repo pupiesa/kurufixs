@@ -28,6 +28,8 @@ const Navbars = () => {
         return "Ticket Management";
       case (path.startsWith("/admin") && path) || "/admin":
         return "Admin Panel";
+      case (path.startsWith("/addasset") && path) || "/addasset":
+        return "Admin Panel";
       default:
         return "Dashboard";
     }

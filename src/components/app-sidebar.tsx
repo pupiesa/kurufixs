@@ -45,19 +45,25 @@ function useRole() {
 function BrandHeader() {
   const { state } = useSidebar();
   return (
-    <div className="px-3 py-3 border-b">
-      <Link href="/" className="flex items-center gap-2" aria-label="Kurufix Home">
+    <div className="px-3 py-5 border-b">
+      <Link
+        href="/"
+        className="flex items-center gap-4"
+        aria-label="Kurufix Home"
+      >
         <Image
           src="/sta.png"
           alt="Kurufix"
-          width={32}
-          height={32}
+          width={80}
+          height={80}
           priority
-          className="rounded-xl object-contain"
+          className="rounded-full object-cover"
         />
         {state !== "collapsed" && (
-          <div className="text-sm font-semibold tracking-wide">
-            <span className="text-orange-500">K</span>urufix
+          <div className="leading-none">
+            <div className="text-3xl md:text-4xl font-extrabold tracking-tight">
+              <span className="text-orange-500">K</span>urufix
+            </div>
           </div>
         )}
       </Link>
@@ -80,15 +86,21 @@ function NavSection({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupLabel className="text-sm md:text-base font-semibold">
+        {label}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                <Link href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive(item.url)}
+                className="text-[15px] md:text-base"
+              >
+                <Link href={item.url} className="gap-2">
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-medium">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -111,18 +123,18 @@ function Navlist() {
     { title: "Account", url: "/account", icon: Settings },
   ];
 
-  // ----- Staff and admin  tools ) -----
+  // ----- Staff and admin tools -----
   const staffItems: MenuItem[] =
     role === "staff" || role === "admin"
       ? [{ title: "Ticket Management", url: "/staff", icon: UserStar }]
       : [];
 
-  // ----- Admin  -----
+  // ----- Admin -----
   const adminItems: MenuItem[] =
     role === "admin"
       ? [
           { title: "User Management", url: "/admin", icon: UserPen },
-          { title: "Add Kurupan", url: "", icon: SquarePlus },
+          { title: "Add Kurupan", url: "/addasset", icon: SquarePlus },
         ]
       : [];
 
@@ -141,8 +153,8 @@ function SidebarFooters() {
 
   return (
     <SidebarFooter className="border-t pt-2">
-      <div className="flex items-center gap-2 px-2 py-1.5">
-        <Avatar className="h-8 w-8">
+      <div className="flex items-center gap-3 px-2 py-2">
+        <Avatar className="h-9 w-9">
           <AvatarImage
             src={session?.user?.image ?? ""}
             className="rounded-full object-cover"
@@ -153,11 +165,11 @@ function SidebarFooters() {
           </AvatarFallback>
         </Avatar>
         {state !== "collapsed" && (
-          <div className="min-w-0 text-xs leading-tight">
-            <div className="truncate font-medium text-sm">
+          <div className="min-w-0 leading-tight">
+            <div className="truncate font-medium text-sm md:text-base">
               {session?.user?.name}
             </div>
-            <div className="truncate text-muted-foreground">
+            <div className="truncate text-muted-foreground text-xs md:text-sm">
               {session?.user?.email}
             </div>
           </div>
