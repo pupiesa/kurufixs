@@ -1,31 +1,14 @@
-// app/api/auth/[...nextauth]/route.ts
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { prisma } from "@/lib/db"; // <-- ปรับ path ให้ตรงโปรเจกต์คุณ
+import { prisma } from "./db"; // export a singleton prisma client
 
-// helper: ensure default "viewer" role exists and return its id
-async function ensureViewerRoleId() {
-  let viewer = await prisma.role.findUnique({ where: { name: "viewer" } });
-  if (!viewer) {
-    viewer = await prisma.role.create({
-      data: {
-        name: "viewer",
-        description: "Default viewer role with read-only access",
-      },
-    });
-  }
-  return viewer.id;
-}
-
-const auth = NextAuth({
+const authSetup = NextAuth({
   adapter: PrismaAdapter(prisma),
-
-  // ใช้ JWT เพื่อให้อ่านได้จาก middleware (Edge) ผ่าน getToken()
+  // Use JWT sessions so middleware (Edge) can read session without touching DB
   session: { strategy: "jwt" },
-
   providers: [
     Credentials({
       name: "Credentials",
@@ -42,7 +25,9 @@ const auth = NextAuth({
         if (!identifier || !password) return null;
 
         const user = await prisma.user.findFirst({
-          where: { OR: [{ email: identifier }, { username: identifier }] },
+          where: {
+            OR: [{ email: identifier }, { username: identifier }],
+          },
           select: {
             id: true,
             name: true,
@@ -57,13 +42,17 @@ const auth = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // ถ้าไม่มี role ให้ตั้งเป็น viewer
+        // ensure default viewer role if missing
         if (!user.roleId) {
-          const viewerId = await ensureViewerRoleId();
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { roleId: viewerId },
+          const viewer = await prisma.role.findUnique({
+            where: { name: "viewer" },
           });
+          if (viewer) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { roleId: viewer.id },
+            });
+          }
         }
 
         return {
@@ -74,68 +63,37 @@ const auth = NextAuth({
         };
       },
     }),
-
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // ถ้าต้องการจำกัดโดเมน: ใช้เช็คใน callbacks.signIn ด้านล่าง
+      // optionally limit hostedDomain: "your.edu"
     }),
   ],
-
   callbacks: {
-    /**
-     * JWT callback:
-     * - ใส่ id ลง token ครั้งแรกที่ sign-in
-     * - รีเฟรช role จาก DB เป็นระยะ (ป้องกัน token ค้างหลังเปลี่ยน role ที่ DB)
-     * - รองรับ trigger: "update" เพื่ออัปเดต role ผ่าน session.update()
-     */
-    async jwt({ token, user, trigger, session }) {
-      if (user?.id) token.sub = user.id; // canonical id
-
-      if (trigger === "update" && session?.role) {
-        (token as any).role = session.role as string;
-        (token as any).roleRefreshedAt = Date.now();
-        return token;
-      }
-
-      const shouldRefresh =
-        !(token as any).role ||
-        !(token as any).roleRefreshedAt ||
-        Date.now() - Number((token as any).roleRefreshedAt) > 10 * 60 * 1000; // 10 นาที
-
-      if (shouldRefresh) {
+    // Put id/role on the JWT
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, attach id and role from DB
+      if (user?.id) {
+        token.id = user.id;
         try {
           const dbUser = await prisma.user.findUnique({
-            where: token.sub ? { id: token.sub } : { email: token.email! },
+            where: { id: user.id },
             select: { role: { select: { name: true } } },
           });
-          (token as any).role =
-            dbUser?.role?.name ?? (token as any).role ?? "viewer";
-          (token as any).roleRefreshedAt = Date.now();
+          (token as any).role = dbUser?.role?.name ?? null;
         } catch {
-          // ถ้า DB ล้มเหลว ให้คงค่าเดิมไว้
+          (token as any).role = null;
         }
       }
-
       return token;
     },
-
-    /**
-     * Session callback:
-     * - map JWT -> session.user (ฝั่ง client ใช้)
-     */
+    // Read from JWT only (no DB calls here, safe for Edge)
     async session({ session, token }) {
       if (!session.user) return session;
-      if (token?.sub) session.user.id = token.sub;
-      (session.user as any).role = (token as any)?.role ?? "viewer";
+      if (token?.id) session.user.id = token.id as string;
+      (session.user as any).role = (token as any)?.role ?? null;
       return session;
     },
-
-    /**
-     * signIn callback:
-     * - จำกัดโดเมน Google (ตัวอย่าง KMITL)
-     * - ถ้า user ยังไม่มี role -> ตั้งค่า viewer
-     */
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         const email = (
@@ -149,12 +107,16 @@ const auth = NextAuth({
           domain.endsWith(".kmitl.ac.th") ||
           (profile as any)?.hd === "kmitl.ac.th";
         if (!email || !allowed) {
+          // Redirect to /login with an error message
           return "/auth?error=AccessDenied";
         }
-
+        // Auto-assign viewer role if user doesn't have one
         try {
-          let targetUserId: string | null = user.id ?? null;
-          if (!targetUserId && user.email) {
+          // NextAuth may or may not include `user.id` here depending on the
+          // provider/version. If it's missing, try to find the user by email.
+          let targetUserId: string | null = null;
+          if (user.id) targetUserId = user.id;
+          else if (user.email) {
             const dbu = await prisma.user.findUnique({
               where: { email: user.email },
               select: { id: true, roleId: true },
@@ -163,57 +125,74 @@ const auth = NextAuth({
           }
 
           if (targetUserId) {
-            const existing = await prisma.user.findUnique({
+            const existingUser = await prisma.user.findUnique({
               where: { id: targetUserId },
               select: { roleId: true },
             });
 
-            if (!existing?.roleId) {
-              const viewerId = await ensureViewerRoleId();
+            if (!existingUser?.roleId) {
+              // Find or create viewer role
+              let viewerRole = await prisma.role.findUnique({
+                where: { name: "viewer" },
+              });
+
+              if (!viewerRole) {
+                viewerRole = await prisma.role.create({
+                  data: {
+                    name: "viewer",
+                    description: "Default viewer role with read-only access",
+                  },
+                });
+              }
+
+              // Assign viewer role to user
               await prisma.user.update({
                 where: { id: targetUserId },
-                data: { roleId: viewerId },
+                data: { roleId: viewerRole.id },
               });
             }
           }
-        } catch (err) {
-          console.error("Error assigning viewer role:", err);
-          // ไม่บล็อกการ sign-in
+        } catch (error) {
+          console.error("Error assigning viewer role:", error);
+          // Don't block sign-in if role assignment fails
         }
       }
       return true;
     },
   },
-
   events: {
-    /**
-     * เมื่อ Adapter สร้าง user ใหม่ (เช่น Google OAuth ครั้งแรก)
-     * -> ใส่ role viewer ให้
-     */
-    async createUser({ user }) {
+    // After a new user is created by the adapter (e.g. via Google OAuth),
+    // ensure they receive the default "viewer" role.
+    async createUser({ user }: any) {
       try {
         if (!user?.id) return;
-        const viewerId = await ensureViewerRoleId();
+        // find or create viewer role
+        let viewerRole = await prisma.role.findUnique({
+          where: { name: "viewer" },
+        });
+        if (!viewerRole) {
+          viewerRole = await prisma.role.create({
+            data: {
+              name: "viewer",
+              description: "Default viewer role with read-only access",
+            },
+          });
+        }
+        // assign role to the newly created user
         await prisma.user.update({
           where: { id: user.id },
-          data: { roleId: viewerId },
+          data: { roleId: viewerRole.id },
         });
       } catch (err) {
         console.error("createUser event: failed to assign viewer role", err);
       }
     },
   },
-
-  secret: process.env.NEXTAUTH_SECRET,
-
   pages: {
-    // signIn: "/auth", // ถ้าต้องการใช้เพจ custom
+    // signIn: "/auth",
   },
 });
 
-// v5 style exports
-export const { handlers, auth: authServer, signIn, signOut } = auth;
-
-// Route handlers for Next.js App Router
-export const GET = handlers.GET;
-export const POST = handlers.POST;
+export const { handlers, auth, signIn, signOut } = authSetup as any;
+// Back-compat for NextAuth v4 where NextAuth returns a single handler function
+export const handler = (authSetup as any)?.handlers?.GET ?? (authSetup as any);
