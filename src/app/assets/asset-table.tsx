@@ -33,6 +33,11 @@ interface AssetTableProps {
 
 export function AssetTable({ data, userRole }: AssetTableProps) {
   const [localData, setLocalData] = React.useState<AssetRow[]>(data ?? []);
+
+  // Keep localData in sync when parent passes updated data (e.g., after page refresh)
+  React.useEffect(() => {
+    setLocalData(data ?? []);
+  }, [data]);
   const columns = [...baseColumns];
   if (userRole === "admin") {
     columns.push({
@@ -55,7 +60,7 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
                 if (res.ok) {
                   // remove from local UI
                   setLocalData((prev) =>
-                    prev.filter((d) => d.id !== row.original.id),
+                    prev.filter((d) => d.id !== row.original.id)
                   );
                 } else {
                   console.error("Failed to delete asset:", await res.json());
