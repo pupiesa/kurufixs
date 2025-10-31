@@ -18,8 +18,14 @@ async function getData(userId: string | undefined) {
 
 const Page = async () => {
   const session = await auth();
+  console.log("Session:", session); // Debugging log for session
+
   const userId = session?.user?.id;
+  console.log("User ID:", userId); // Debugging log for userId
+
   const user = await getData(userId);
+  console.log("User:", user); // Debugging log for user
+
   return (
     <div className="flex justify-center mt-10">
       <Card className="w-100 p-5">

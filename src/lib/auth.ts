@@ -3,12 +3,28 @@ import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { prisma } from "./db"; // export a singleton prisma client
+import { prisma } from "@/lib/db"; // must export a singleton PrismaClient
 
-const authSetup = NextAuth({
+// Ensure default "viewer" role exists and return its id
+async function ensureViewerRoleId() {
+  let viewer = await prisma.role.findUnique({ where: { name: "viewer" } });
+  if (!viewer) {
+    viewer = await prisma.role.create({
+      data: {
+        name: "viewer",
+        description: "Default viewer role with read-only access",
+      },
+    });
+  }
+  return viewer.id;
+}
+
+const authKit = NextAuth({
   adapter: PrismaAdapter(prisma),
-  // Use JWT sessions so middleware (Edge) can read session without touching DB
+
+  // JWT strategy so Edge middleware can read with getToken()
   session: { strategy: "jwt" },
+
   providers: [
     Credentials({
       name: "Credentials",
@@ -25,9 +41,7 @@ const authSetup = NextAuth({
         if (!identifier || !password) return null;
 
         const user = await prisma.user.findFirst({
-          where: {
-            OR: [{ email: identifier }, { username: identifier }],
-          },
+          where: { OR: [{ email: identifier }, { username: identifier }] },
           select: {
             id: true,
             name: true,
@@ -42,17 +56,13 @@ const authSetup = NextAuth({
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // ensure default viewer role if missing
+        // If user has no role, assign "viewer"
         if (!user.roleId) {
-          const viewer = await prisma.role.findUnique({
-            where: { name: "viewer" },
+          const viewerId = await ensureViewerRoleId();
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { roleId: viewerId },
           });
-          if (viewer) {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { roleId: viewer.id },
-            });
-          }
         }
 
         return {
@@ -63,37 +73,69 @@ const authSetup = NextAuth({
         };
       },
     }),
+
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // optionally limit hostedDomain: "your.edu"
     }),
   ],
+
   callbacks: {
-    // Put id/role on the JWT
-    async jwt({ token, user, trigger }) {
-      // On initial sign-in, attach id and role from DB
-      if (user?.id) {
-        token.id = user.id;
+    /**
+     * JWT callback
+     * - store id on token.sub (canonical)
+     * - refresh role from DB periodically
+     */
+    async jwt({ token, user, trigger, session }) {
+      if (user?.id) token.sub = user.id; // canonical id
+
+      // Allow manual updates via session.update({ role })
+      if (trigger === "update" && session?.role) {
+        (token as any).role = session.role;
+        (token as any).roleRefreshedAt = Date.now();
+        return token;
+      }
+
+      const shouldRefresh =
+        !(token as any).role ||
+        !(token as any).roleRefreshedAt ||
+        Date.now() - Number((token as any).roleRefreshedAt) > 10 * 60 * 1000; // 10 minutes
+
+      if (shouldRefresh) {
         try {
           const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: token.sub ? { id: token.sub } : { email: token.email! },
             select: { role: { select: { name: true } } },
           });
-          (token as any).role = dbUser?.role?.name ?? null;
-        } catch {
-          (token as any).role = null;
+          (token as any).role =
+            dbUser?.role?.name ?? (token as any).role ?? "viewer";
+          (token as any).roleRefreshedAt = Date.now();
+        } catch (err) {
+          // keep prior token.role if DB fails
+          console.error("JWT role refresh failed:", err);
         }
       }
+
       return token;
     },
-    // Read from JWT only (no DB calls here, safe for Edge)
+
+    /**
+     * Session callback
+     * - map token -> session.user
+     */
     async session({ session, token }) {
-      if (!session.user) return session;
-      if (token?.id) session.user.id = token.id as string;
-      (session.user as any).role = (token as any)?.role ?? null;
+      if (!session.user) session.user = {} as any;
+      // Read id from canonical sub; fallback to legacy token.id
+      session.user.id = (token.sub ?? (token as any).id ?? "") as string;
+      (session.user as any).role = (token as any)?.role ?? "viewer";
       return session;
     },
+
+    /**
+     * signIn callback
+     * - example domain restriction for Google
+     * - ensure default viewer role if missing
+     */
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         const email = (
@@ -106,17 +148,14 @@ const authSetup = NextAuth({
           domain === "kmitl.ac.th" ||
           domain.endsWith(".kmitl.ac.th") ||
           (profile as any)?.hd === "kmitl.ac.th";
+
         if (!email || !allowed) {
-          // Redirect to /login with an error message
           return "/auth?error=AccessDenied";
         }
-        // Auto-assign viewer role if user doesn't have one
+
         try {
-          // NextAuth may or may not include `user.id` here depending on the
-          // provider/version. If it's missing, try to find the user by email.
-          let targetUserId: string | null = null;
-          if (user.id) targetUserId = user.id;
-          else if (user.email) {
+          let targetUserId: string | null = user.id ?? null;
+          if (!targetUserId && user.email) {
             const dbu = await prisma.user.findUnique({
               where: { email: user.email },
               select: { id: true, roleId: true },
@@ -125,74 +164,45 @@ const authSetup = NextAuth({
           }
 
           if (targetUserId) {
-            const existingUser = await prisma.user.findUnique({
+            const existing = await prisma.user.findUnique({
               where: { id: targetUserId },
               select: { roleId: true },
             });
 
-            if (!existingUser?.roleId) {
-              // Find or create viewer role
-              let viewerRole = await prisma.role.findUnique({
-                where: { name: "viewer" },
-              });
-
-              if (!viewerRole) {
-                viewerRole = await prisma.role.create({
-                  data: {
-                    name: "viewer",
-                    description: "Default viewer role with read-only access",
-                  },
-                });
-              }
-
-              // Assign viewer role to user
+            if (!existing?.roleId) {
+              const viewerId = await ensureViewerRoleId();
               await prisma.user.update({
                 where: { id: targetUserId },
-                data: { roleId: viewerRole.id },
+                data: { roleId: viewerId },
               });
             }
           }
-        } catch (error) {
-          console.error("Error assigning viewer role:", error);
-          // Don't block sign-in if role assignment fails
+        } catch (err) {
+          console.error("Google signIn: role assignment failed", err);
         }
       }
       return true;
     },
   },
+
   events: {
-    // After a new user is created by the adapter (e.g. via Google OAuth),
-    // ensure they receive the default "viewer" role.
-    async createUser({ user }: any) {
+    // When a new user is created by the adapter, ensure they get "viewer"
+    async createUser({ user }) {
       try {
         if (!user?.id) return;
-        // find or create viewer role
-        let viewerRole = await prisma.role.findUnique({
-          where: { name: "viewer" },
-        });
-        if (!viewerRole) {
-          viewerRole = await prisma.role.create({
-            data: {
-              name: "viewer",
-              description: "Default viewer role with read-only access",
-            },
-          });
-        }
-        // assign role to the newly created user
+        const viewerId = await ensureViewerRoleId();
         await prisma.user.update({
           where: { id: user.id },
-          data: { roleId: viewerRole.id },
+          data: { roleId: viewerId },
         });
       } catch (err) {
         console.error("createUser event: failed to assign viewer role", err);
       }
     },
   },
-  pages: {
-    // signIn: "/auth",
-  },
+
+  secret: process.env.NEXTAUTH_SECRET,
 });
 
-export const { handlers, auth, signIn, signOut } = authSetup as any;
-// Back-compat for NextAuth v4 where NextAuth returns a single handler function
-export const handler = (authSetup as any)?.handlers?.GET ?? (authSetup as any);
+// v5 exports
+export const { handlers, auth, signIn, signOut } = authKit;

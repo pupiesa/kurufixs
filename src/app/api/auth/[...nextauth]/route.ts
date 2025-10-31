@@ -135,8 +135,16 @@ const auth = NextAuth({
      * - map JWT -> session.user (ฝั่ง client ใช้)
      */
     async session({ session, token }) {
-      if (!session.user) return session;
-      if (token?.sub) session.user.id = token.sub;
+      // Ensure session.user exists. Some NextAuth flows may call the session
+      // callback with an empty session object; create user container so we
+      // can reliably attach id/role values.
+      if (!session.user) {
+        // create a minimal user object to return to the client
+        // This prevents callers from receiving session.user === null
+        // which led to confusing null-user cases in the app.
+        (session as any).user = {};
+      }
+      if (token?.sub) (session.user as any).id = token.sub;
       (session.user as any).role = (token as any)?.role ?? "viewer";
       return session;
     },
