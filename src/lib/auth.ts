@@ -160,6 +160,34 @@ const authSetup = NextAuth({
       return true;
     },
   },
+  events: {
+    // After a new user is created by the adapter (e.g. via Google OAuth),
+    // ensure they receive the default "viewer" role.
+    async createUser({ user }: any) {
+      try {
+        if (!user?.id) return;
+        // find or create viewer role
+        let viewerRole = await prisma.role.findUnique({
+          where: { name: "viewer" },
+        });
+        if (!viewerRole) {
+          viewerRole = await prisma.role.create({
+            data: {
+              name: "viewer",
+              description: "Default viewer role with read-only access",
+            },
+          });
+        }
+        // assign role to the newly created user
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { roleId: viewerRole.id },
+        });
+      } catch (err) {
+        console.error("createUser event: failed to assign viewer role", err);
+      }
+    },
+  },
   pages: {
     // signIn: "/auth",
   },
