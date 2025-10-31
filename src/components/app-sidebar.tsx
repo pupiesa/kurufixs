@@ -71,13 +71,7 @@ function BrandHeader() {
   );
 }
 
-function NavSection({
-  label,
-  items,
-}: {
-  label: string;
-  items: MenuItem[];
-}) {
+function NavSection({ label, items }: { label: string; items: MenuItem[] }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -134,7 +128,7 @@ function Navlist() {
     role === "admin"
       ? [
           { title: "User Management", url: "/admin", icon: UserPen },
-          { title: "Add Kurupan", url: "/addasset", icon: SquarePlus },
+          { title: "Add Kurupan", url: "/admin/addasset", icon: SquarePlus },
         ]
       : [];
 
