@@ -16,9 +16,9 @@ export default async function LoginPage({
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? sp.error : undefined;
 
-  let session: Awaited<ReturnType<typeof auth>> | null = null;
+  let session = null;
   try {
-    session = await auth();
+    session = (await auth()) ?? null;
   } catch (e) {
     console.error("AUTH_ERROR /auth:", e);
   }
