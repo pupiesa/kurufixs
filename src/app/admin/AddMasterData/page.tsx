@@ -113,10 +113,8 @@ export async function addLocationAction(input: {
   const building = (input?.building ?? "").trim();
   const room = (input?.room ?? "").trim();
   const floor =
-    typeof input?.floor === "number"
-      ? input.floor
-      : input?.floor
-      ? Number.parseInt(String(input.floor), 10)
+    input?.floor !== undefined && input?.floor !== null
+      ? String(input.floor)
       : null;
   const description = input?.description?.toString().trim() || null;
 
@@ -182,10 +180,8 @@ export async function updateLocationAction(input: {
   const building = (input?.building ?? "").trim();
   const room = (input?.room ?? "").trim();
   const floor =
-    typeof input?.floor === "number"
-      ? input.floor
-      : input?.floor
-      ? Number.parseInt(String(input.floor), 10)
+    input?.floor !== undefined && input?.floor !== null
+      ? String(input.floor)
       : null;
   const description = input?.description?.toString().trim() || null;
 

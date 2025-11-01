@@ -67,7 +67,7 @@ interface Props {
     id: string;
     building: string;
     room: string;
-    floor?: number | null;
+    floor?: string | null;
     description?: string | null;
   }) => Promise<LocationRow>;
   onDeleteType: (input: { id: string }) => Promise<{ ok: true }>;
@@ -205,7 +205,7 @@ const LocationList = memo(
                   <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{label}</div>
                     <div className="text-sm text-muted-foreground">
-                      {typeof l.floor === "number"
+                      {typeof l.floor === "string"
                         ? `ชั้น ${l.floor}`
                         : "ไม่ระบุชั้น"}
                       {l.description ? ` • ${l.description}` : ""}
@@ -359,7 +359,7 @@ export default function ClientUI({
         const created = await onAddLocation({
           building: bld.trim(),
           room: room.trim(),
-          floor: floor ? Number(floor) : null,
+          floor: floor ? parseInt(floor) : null,
           description: lDesc.trim() || null,
         });
         setLocs((prev) => [created, ...prev]);
@@ -467,7 +467,7 @@ export default function ClientUI({
           id: editLocId,
           building: bld.trim(),
           room: room.trim(),
-          floor: floor ? Number(floor) : null,
+          floor: floor ? floor.toString() : null,
           description: lDesc.trim() || null,
         });
         setLocs((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
