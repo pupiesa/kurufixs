@@ -1,10 +1,8 @@
 // src/app/addasset/page.tsx
 // Server Component (ไม่มี "use client")
 import { Prisma } from "@prisma/client";
-import * as DB from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
-
-const prisma: any = (DB as any).prisma ?? (DB as any).db;
 
 /* ----------------------------- UI helpers ----------------------------- */
 const baseCard =
