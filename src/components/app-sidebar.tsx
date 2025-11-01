@@ -128,8 +128,8 @@ function Navlist() {
     role === "admin"
       ? [
           { title: "User Management", url: "/admin", icon: UserPen },
-          { title: "Selection management", url: "/admin/AddMasterData", icon: FileCog },
-          { title: "Add Kurufix", url: "/admin/addasset", icon: SquarePlus }, // ปรับชื่อปุ่มตามที่แจ้ง
+          { title: "Selection Management", url: "/admin/AddMasterData", icon: FileCog },
+          { title: "Add Assets", url: "/admin/addasset", icon: SquarePlus },
         ]
       : [];
 
