@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export function EditDialog(props: { data: any }) {
   const data = props.data;
@@ -28,6 +29,9 @@ export function EditDialog(props: { data: any }) {
 
   const [types, setTypes] = useState<{ id: string; name: string }[]>([]);
   const [statuses, setStatuses] = useState<{ id: string; name: string }[]>([]);
+  const [typeValue, setTypeValue] = useState<string>("");
+  const [statusValue, setStatusValue] = useState<string>("");
+
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,7 +47,6 @@ export function EditDialog(props: { data: any }) {
         setStatuses(json.statuses ?? []);
       } catch (e) {
         // ignore for now
-        // eslint-disable-next-line no-console
         console.error("failed to load asset meta", e);
       }
     }
@@ -79,6 +82,14 @@ export function EditDialog(props: { data: any }) {
     };
   }, []);
 
+  // Sync default select values when asset or meta loads
+  useEffect(() => {
+    const initialType = fullData?.type?.name ?? fullData?.type ?? "";
+    const initialStatus = fullData?.status?.name ?? fullData?.status ?? "";
+    if (typeValue === "" && initialType) setTypeValue(initialType);
+    if (statusValue === "" && initialStatus) setStatusValue(initialStatus);
+  }, [fullData, types, statuses]);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -93,9 +104,11 @@ export function EditDialog(props: { data: any }) {
             Update the asset details below. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        {/* Wait until fullData (or empty create mode) is ready so uncontrolled defaultValue inputs mount with correct values */}
+
         {!loaded ? (
-          <div className="px-4 py-6">Loading…</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            Loading…
+          </div>
         ) : (
           <form
             action={updateAssetAction}
@@ -139,18 +152,19 @@ export function EditDialog(props: { data: any }) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-3">
                   <Label htmlFor="typeName">Type</Label>
-                  <select
-                    id="typeName"
-                    name="typeName"
-                    defaultValue={fullData?.type?.name ?? fullData?.type ?? ""}
-                    className="input"
-                  >
-                    {types.map((t) => (
-                      <option key={t.id} value={t.name}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                  <input type="hidden" name="typeName" value={typeValue} />
+                  <Select value={typeValue} onValueChange={setTypeValue}>
+                    <SelectTrigger id="typeName" className="input">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover text-popover-foreground border-border">
+                      {types.map((t) => (
+                        <SelectItem key={t.id} value={t.name}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="brand">Brand</Label>
@@ -164,20 +178,19 @@ export function EditDialog(props: { data: any }) {
 
               <div className="grid gap-3">
                 <Label htmlFor="statusName">Status</Label>
-                <select
-                  id="statusName"
-                  name="statusName"
-                  defaultValue={
-                    fullData?.status?.name ?? fullData?.status ?? ""
-                  }
-                  className="input"
-                >
-                  {statuses.map((s) => (
-                    <option key={s.id} value={s.name}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                <input type="hidden" name="statusName" value={statusValue} />
+                <Select value={statusValue} onValueChange={setStatusValue}>
+                  <SelectTrigger id="statusName" className="input">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground border-border">
+                    {statuses.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -187,10 +200,7 @@ export function EditDialog(props: { data: any }) {
                     id="building"
                     name="building"
                     defaultValue={
-                      fullData?.location?.building ??
-                      (typeof fullData?.location === "string"
-                        ? fullData.location.split(" ")[0] ?? ""
-                        : "")
+                      fullData?.building ?? fullData?.location?.building ?? ""
                     }
                   />
                 </div>
@@ -199,16 +209,11 @@ export function EditDialog(props: { data: any }) {
                   <Input
                     id="room"
                     name="room"
-                    defaultValue={
-                      fullData?.location?.room ??
-                      (typeof fullData?.location === "string"
-                        ? fullData.location.split(" ")[1] ?? ""
-                        : "")
-                    }
+                    defaultValue={fullData?.room ?? fullData?.location?.room ?? ""}
                   />
                 </div>
               </div>
-              {/* Additional Asset fields from Prisma schema */}
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="model">Model</Label>
@@ -244,6 +249,7 @@ export function EditDialog(props: { data: any }) {
                     }
                   />
                 </div>
+
                 <div>
                   <Label htmlFor="warrantyExp">Warranty Exp</Label>
                   <Input
@@ -257,19 +263,6 @@ export function EditDialog(props: { data: any }) {
                             .slice(0, 10)
                         : ""
                     }
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="1000"
-                    defaultValue={fullData?.price ?? ""}
                   />
                 </div>
               </div>
