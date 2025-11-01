@@ -102,7 +102,7 @@ export function Registercard() {
           <div>
             <CardTitle>Sign up</CardTitle>
             <CardDescription>
-              Register with email/username & password or Sign up with Google
+              email/username & Sign up with Google
             </CardDescription>
           </div>
           <CardAction>

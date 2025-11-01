@@ -52,7 +52,7 @@ export default function ClientUI({
   // ----- shared forms (Add / Edit on right panel) -----
   // Type
   const [tName, setTName] = useState("");
-  const [tDesc, setTDesc] = useState(""); // ✅ แก้บรรทัดนี้ (ลบ the ออก)
+  const [tDesc, setTDesc] = useState("");
   const [editTypeId, setEditTypeId] = useState<string | null>(null);
   const [typeSaveArmed, setTypeSaveArmed] = useState(false);
   const typeSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,6 +70,26 @@ export default function ClientUI({
   const canSaveLoc  = useMemo(() => bld.trim() && room.trim(), [bld, room]);
 
   const [pending, startTransition] = useTransition();
+
+  // -------------------- Scroll preserve helpers --------------------
+  const typeListRef = useRef<HTMLDivElement | null>(null);
+  const locListRef  = useRef<HTMLDivElement | null>(null);
+
+  const keepScroll = (which: "type" | "loc") => {
+    const fns: Array<() => void> = [];
+    // list container position
+    const box = which === "type" ? typeListRef.current : locListRef.current;
+    if (box) {
+      const top = box.scrollTop;
+      fns.push(() => requestAnimationFrame(() => { if (box) box.scrollTop = top; }));
+    }
+    // window scroll position
+    if (typeof window !== "undefined") {
+      const y = window.scrollY;
+      fns.push(() => requestAnimationFrame(() => window.scrollTo({ top: y })));
+    }
+    return () => fns.forEach(fn => fn());
+  };
 
   // delete (two-step)
   const [armedId, setArmedId] = useState<string | null>(null);
@@ -121,20 +141,25 @@ export default function ClientUI({
 
   // ====== EDIT: open/cancel/toggle ======
   const openTypeEdit = (row: TypeRow) => {
+    const restore = keepScroll("type");
     setEditTypeId(row.id);
     setTName(row.name || "");
     setTDesc(row.description || "");
     setTypeSaveArmed(false);
     if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
+    restore();
   };
   const cancelTypeEdit = () => {
+    const restore = keepScroll("type");
     setEditTypeId(null);
     setTName(""); setTDesc("");
     setTypeSaveArmed(false);
     if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
+    restore();
   };
 
   const openLocEdit = (row: LocationRow) => {
+    const restore = keepScroll("loc");
     setEditLocId(row.id);
     setBld(row.building || "");
     setRoom(row.room || "");
@@ -142,12 +167,15 @@ export default function ClientUI({
     setLDesc(row.description || "");
     setLocSaveArmed(false);
     if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
+    restore();
   };
   const cancelLocEdit = () => {
+    const restore = keepScroll("loc");
     setEditLocId(null);
     setBld(""); setRoom(""); setFloor(""); setLDesc("");
     setLocSaveArmed(false);
     if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
+    restore();
   };
 
   // ====== EDIT: two-tap confirm then save ======
@@ -168,6 +196,7 @@ export default function ClientUI({
   const submitTypeEdit = () => {
     if (!editTypeId || !canSaveType || pending) return;
     if (!typeSaveArmed) return armTypeSaveOnce();
+    const restore = keepScroll("type");
     startTransition(async () => {
       try {
         const updated = await onEditType({
@@ -180,6 +209,8 @@ export default function ClientUI({
         toast.success("บันทึกการแก้ไข Type แล้ว");
       } catch (e: any) {
         toast.error(e?.message || "แก้ไขไม่สำเร็จ");
+      } finally {
+        restore();
       }
     });
   };
@@ -187,6 +218,7 @@ export default function ClientUI({
   const submitLocationEdit = () => {
     if (!editLocId || !canSaveLoc || pending) return;
     if (!locSaveArmed) return armLocSaveOnce();
+    const restore = keepScroll("loc");
     startTransition(async () => {
       try {
         const updated = await onEditLocation({
@@ -201,6 +233,8 @@ export default function ClientUI({
         toast.success("บันทึกการแก้ไข Location แล้ว");
       } catch (e: any) {
         toast.error(e?.message || "แก้ไขไม่สำเร็จ");
+      } finally {
+        restore();
       }
     });
   };
@@ -209,9 +243,12 @@ export default function ClientUI({
   const deleteType = (id: string, name: string) => {
     if (busyId || pending) return;
     if (armedId !== id) {
+      const restore = keepScroll("type");
       armDeleteOnce(id);
+      restore();
       return;
     }
+    const restore = keepScroll("type");
     setBusyId(id);
     startTransition(async () => {
       try {
@@ -223,6 +260,7 @@ export default function ClientUI({
       } finally {
         setBusyId(null);
         setArmedId(null);
+        restore();
       }
     });
   };
@@ -230,9 +268,12 @@ export default function ClientUI({
   const deleteLocation = (id: string, label: string) => {
     if (busyId || pending) return;
     if (armedId !== id) {
+      const restore = keepScroll("loc");
       armDeleteOnce(id);
+      restore();
       return;
     }
+    const restore = keepScroll("loc");
     setBusyId(id);
     startTransition(async () => {
       try {
@@ -244,6 +285,7 @@ export default function ClientUI({
       } finally {
         setBusyId(null);
         setArmedId(null);
+        restore();
       }
     });
   };
@@ -255,7 +297,7 @@ export default function ClientUI({
   // ====== Lists (toggle edit with blue highlight) ======
   const TypeList = () => (
     types.length ? (
-      <div className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
+      <div ref={typeListRef} className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
         <ul className="w-full divide-y">
           {types.map((t) => {
             const armedDel = armedId === t.id;
@@ -283,7 +325,6 @@ export default function ClientUI({
                     className={isEditing ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : ""}
                     onClick={() => {
                       if (isEditing) {
-                        // toggle back to Add mode
                         cancelTypeEdit();
                       } else {
                         openTypeEdit(t);
@@ -314,7 +355,7 @@ export default function ClientUI({
 
   const LocationList = () => (
     locs.length ? (
-      <div className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
+      <div ref={locListRef} className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
         <ul className="w-full divide-y">
           {locs.map((l) => {
             const label = `${l.building}-${l.room}`;
@@ -342,7 +383,6 @@ export default function ClientUI({
                     className={isEditing ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : ""}
                     onClick={() => {
                       if (isEditing) {
-                        // toggle back to Add mode
                         cancelLocEdit();
                       } else {
                         openLocEdit(l);
@@ -394,7 +434,6 @@ export default function ClientUI({
         {/* TYPE */}
         <TabsContent value="type">
           <div className="grid md:grid-cols-2 gap-4">
-            {/* list */}
             <Card>
               <CardHeader>
                 <CardTitle>รายการที่มีอยู่</CardTitle>
@@ -405,7 +444,6 @@ export default function ClientUI({
               </CardContent>
             </Card>
 
-            {/* right panel: Add or Edit */}
             <Card>
               <CardHeader>
                 <CardTitle>{editTypeId ? "Edit Type" : "Add Type"}</CardTitle>
@@ -468,7 +506,6 @@ export default function ClientUI({
         {/* LOCATION */}
         <TabsContent value="location">
           <div className="grid md:grid-cols-2 gap-4">
-            {/* list */}
             <Card>
               <CardHeader>
                 <CardTitle>รายการที่มีอยู่</CardTitle>
@@ -479,7 +516,6 @@ export default function ClientUI({
               </CardContent>
             </Card>
 
-            {/* right panel: Add or Edit */}
             <Card>
               <CardHeader>
                 <CardTitle>{editLocId ? "Edit Location" : "Add Location"}</CardTitle>

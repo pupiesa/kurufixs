@@ -73,7 +73,7 @@ export function Logincard() {
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle>Sign in</CardTitle>
-            <CardDescription>Use email/username & password or Login with Google</CardDescription>
+            <CardDescription>username & Login with Google</CardDescription>
           </div>
           <CardAction>
             <Link href="/auth/register">
