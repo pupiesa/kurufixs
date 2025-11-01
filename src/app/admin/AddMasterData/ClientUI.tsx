@@ -41,7 +41,7 @@ type LocationRow = {
   id: string;
   building: string;
   room: string;
-  floor?: number | null;
+  floor?: string | null;
   description?: string | null;
 };
 
@@ -55,7 +55,7 @@ interface Props {
   onAddLocation: (input: {
     building: string;
     room: string;
-    floor?: number | null;
+    floor?: string | null;
     description?: string | null;
   }) => Promise<LocationRow>;
   onEditType: (input: {
@@ -359,7 +359,7 @@ export default function ClientUI({
         const created = await onAddLocation({
           building: bld.trim(),
           room: room.trim(),
-          floor: floor ? parseInt(floor) : null,
+          floor: floor ? floor.trim() : null,
           description: lDesc.trim() || null,
         });
         setLocs((prev) => [created, ...prev]);
@@ -467,7 +467,7 @@ export default function ClientUI({
           id: editLocId,
           building: bld.trim(),
           room: room.trim(),
-          floor: floor ? floor.toString() : null,
+          floor: floor ? floor.trim() : null,
           description: lDesc.trim() || null,
         });
         setLocs((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));

@@ -103,7 +103,7 @@ export async function addTypeAction(input: {
 export async function addLocationAction(input: {
   building: string;
   room: string;
-  floor?: number | null;
+  floor?: string | null;
   description?: string | null;
 }) {
   "use server";
@@ -112,10 +112,7 @@ export async function addLocationAction(input: {
 
   const building = (input?.building ?? "").trim();
   const room = (input?.room ?? "").trim();
-  const floor =
-    input?.floor !== undefined && input?.floor !== null
-      ? String(input.floor)
-      : null;
+  const floor = input?.floor?.trim() || null;
   const description = input?.description?.toString().trim() || null;
 
   if (!building || !room) throw new Error("building and room are required");
@@ -168,7 +165,7 @@ export async function updateLocationAction(input: {
   id: string;
   building: string;
   room: string;
-  floor?: number | null;
+  floor?: string | null;
   description?: string | null;
 }) {
   "use server";
@@ -179,10 +176,7 @@ export async function updateLocationAction(input: {
 
   const building = (input?.building ?? "").trim();
   const room = (input?.room ?? "").trim();
-  const floor =
-    input?.floor !== undefined && input?.floor !== null
-      ? String(input.floor)
-      : null;
+  const floor = input?.floor?.trim() || null;
   const description = input?.description?.toString().trim() || null;
 
   if (!building || !room) throw new Error("building and room are required");
