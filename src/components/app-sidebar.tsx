@@ -10,6 +10,7 @@ import {
   UserStar,
   Wrench,
   SquarePlus,
+  FileCog,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -128,7 +129,8 @@ function Navlist() {
     role === "admin"
       ? [
           { title: "User Management", url: "/admin", icon: UserPen },
-          { title: "Add Kurupan", url: "/admin/addasset", icon: SquarePlus },
+          { title: "Selection management", url: "/admin/AddMasterData", icon: FileCog },
+          { title: "Add Kurupan", url: "/admin/addasset", icon: SquarePlus }
         ]
       : [];
 
