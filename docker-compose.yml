@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    # No pnpm or prisma commands at runtime; the image already has everything.
+    command: ["node", ".next/standalone/server.js"]
