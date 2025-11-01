@@ -1,12 +1,32 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import React, {
+  memo,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  forwardRef,
+  RefObject,
+} from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import {
-  Plus, Database, MapPin, Shapes, Trash2, Check, Pencil, X,
+  Plus,
+  Database,
+  MapPin,
+  Shapes,
+  Trash2,
+  Check,
+  Pencil,
+  X,
 } from "lucide-react";
 import {
-  Card, CardHeader, CardTitle, CardDescription, CardContent,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,26 +35,226 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
+/* ================== Types ================== */
 type TypeRow = { id: string; name: string; description?: string | null };
 type LocationRow = {
-  id: string; building: string; room: string; floor?: number | null; description?: string | null;
+  id: string;
+  building: string;
+  room: string;
+  floor?: number | null;
+  description?: string | null;
 };
 
 interface Props {
   initialTypes: TypeRow[];
   initialLocs: LocationRow[];
-  onAddType: (input: { name: string; description?: string | null }) => Promise<TypeRow>;
+  onAddType: (input: {
+    name: string;
+    description?: string | null;
+  }) => Promise<TypeRow>;
   onAddLocation: (input: {
-    building: string; room: string; floor?: number | null; description?: string | null;
+    building: string;
+    room: string;
+    floor?: number | null;
+    description?: string | null;
   }) => Promise<LocationRow>;
-  onEditType: (input: { id: string; name: string; description?: string | null }) => Promise<TypeRow>;
+  onEditType: (input: {
+    id: string;
+    name: string;
+    description?: string | null;
+  }) => Promise<TypeRow>;
   onEditLocation: (input: {
-    id: string; building: string; room: string; floor?: number | null; description?: string | null;
+    id: string;
+    building: string;
+    room: string;
+    floor?: number | null;
+    description?: string | null;
   }) => Promise<LocationRow>;
   onDeleteType: (input: { id: string }) => Promise<{ ok: true }>;
   onDeleteLocation: (input: { id: string }) => Promise<{ ok: true }>;
 }
 
+/* ================== Small UI ================== */
+const EmptyHint = ({ text }: { text: string }) => (
+  <div className="text-sm text-muted-foreground">{text}</div>
+);
+
+/* ================== Top-level, memoized lists ================== */
+type TypeListProps = {
+  items: TypeRow[];
+  armedId: string | null;
+  busyId: string | null;
+  editId: string | null;
+  onToggleEdit: (row: TypeRow) => void;
+  onCancelEdit: () => void;
+  onDelete: (id: string, name: string) => void;
+};
+
+const TypeList = memo(
+  forwardRef<HTMLDivElement, TypeListProps>(function TypeList(
+    { items, armedId, busyId, editId, onToggleEdit, onCancelEdit, onDelete },
+    ref
+  ) {
+    if (!items.length) return <EmptyHint text="ยังไม่มีข้อมูล" />;
+
+    return (
+      <div
+        ref={ref}
+        className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40"
+      >
+        <ul className="w-full divide-y">
+          {items.map((t) => {
+            const armedDel = armedId === t.id;
+            const busy = busyId === t.id;
+            const isEditing = editId === t.id;
+            return (
+              <li
+                key={t.id}
+                className={`w-full p-3 pl-4 pr-2 rounded-md ${
+                  isEditing ? "bg-sky-500/10 ring-1 ring-sky-400" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{t.name}</div>
+                    {t.description ? (
+                      <div className="text-sm text-muted-foreground line-clamp-2">
+                        {t.description}
+                      </div>
+                    ) : null}
+                  </div>
+                  <Button
+                    variant={isEditing ? "secondary" : "ghost"}
+                    size="icon"
+                    className={
+                      isEditing
+                        ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
+                        : ""
+                    }
+                    onClick={() =>
+                      isEditing ? onCancelEdit() : onToggleEdit(t)
+                    }
+                    aria-label={`Edit ${t.name}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={armedDel ? "destructive" : "ghost"}
+                    size="icon"
+                    className={
+                      armedDel
+                        ? ""
+                        : "text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                    }
+                    onClick={() => onDelete(t.id, t.name)}
+                    disabled={busy}
+                    aria-label={`Delete ${t.name}`}
+                  >
+                    {armedDel ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  })
+);
+
+type LocationListProps = {
+  items: LocationRow[];
+  armedId: string | null;
+  busyId: string | null;
+  editId: string | null;
+  onToggleEdit: (row: LocationRow) => void;
+  onCancelEdit: () => void;
+  onDelete: (id: string, label: string) => void;
+};
+
+const LocationList = memo(
+  forwardRef<HTMLDivElement, LocationListProps>(function LocationList(
+    { items, armedId, busyId, editId, onToggleEdit, onCancelEdit, onDelete },
+    ref
+  ) {
+    if (!items.length) return <EmptyHint text="ยังไม่มีข้อมูล" />;
+
+    return (
+      <div
+        ref={ref}
+        className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40"
+      >
+        <ul className="w-full divide-y">
+          {items.map((l) => {
+            const label = `${l.building}-${l.room}`;
+            const armedDel = armedId === l.id;
+            const busy = busyId === l.id;
+            const isEditing = editId === l.id;
+            return (
+              <li
+                key={l.id}
+                className={`w-full p-3 pl-4 pr-2 rounded-md ${
+                  isEditing ? "bg-sky-500/10 ring-1 ring-sky-400" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">{label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {typeof l.floor === "number"
+                        ? `ชั้น ${l.floor}`
+                        : "ไม่ระบุชั้น"}
+                      {l.description ? ` • ${l.description}` : ""}
+                    </div>
+                  </div>
+                  <Button
+                    variant={isEditing ? "secondary" : "ghost"}
+                    size="icon"
+                    className={
+                      isEditing
+                        ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
+                        : ""
+                    }
+                    onClick={() =>
+                      isEditing ? onCancelEdit() : onToggleEdit(l)
+                    }
+                    aria-label={`Edit ${label}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={armedDel ? "destructive" : "ghost"}
+                    size="icon"
+                    className={
+                      armedDel
+                        ? ""
+                        : "text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                    }
+                    onClick={() => onDelete(l.id, label)}
+                    disabled={busy}
+                    aria-label={`Delete ${label}`}
+                  >
+                    {armedDel ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  })
+);
+
+/* ================== Main ================== */
 export default function ClientUI({
   initialTypes,
   initialLocs,
@@ -47,7 +267,7 @@ export default function ClientUI({
 }: Props) {
   // lists
   const [types, setTypes] = useState<TypeRow[]>(initialTypes ?? []);
-  const [locs,  setLocs]  = useState<LocationRow[]>(initialLocs ?? []);
+  const [locs, setLocs] = useState<LocationRow[]>(initialLocs ?? []);
 
   // ----- shared forms (Add / Edit on right panel) -----
   // Type
@@ -67,44 +287,52 @@ export default function ClientUI({
   const locSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canSaveType = useMemo(() => tName.trim().length > 0, [tName]);
-  const canSaveLoc  = useMemo(() => bld.trim() && room.trim(), [bld, room]);
+  const canSaveLoc = useMemo(() => !!(bld.trim() && room.trim()), [bld, room]);
 
   const [pending, startTransition] = useTransition();
 
-  // -------------------- Scroll preserve helpers --------------------
+  // -------------------- Scroll helpers --------------------
   const typeListRef = useRef<HTMLDivElement | null>(null);
-  const locListRef  = useRef<HTMLDivElement | null>(null);
+  const locListRef = useRef<HTMLDivElement | null>(null);
 
-  const keepScroll = (which: "type" | "loc") => {
-    const fns: Array<() => void> = [];
-    // list container position
+  function preserveScroll(fn: () => void, which: "type" | "loc") {
     const box = which === "type" ? typeListRef.current : locListRef.current;
-    if (box) {
-      const top = box.scrollTop;
-      fns.push(() => requestAnimationFrame(() => { if (box) box.scrollTop = top; }));
-    }
-    // window scroll position
-    if (typeof window !== "undefined") {
-      const y = window.scrollY;
-      fns.push(() => requestAnimationFrame(() => window.scrollTo({ top: y })));
-    }
-    return () => fns.forEach(fn => fn());
-  };
+    const winY = typeof window !== "undefined" ? window.scrollY : 0;
+    const boxY = box?.scrollTop ?? 0;
+    flushSync(fn); // commit before paint
+    requestAnimationFrame(() => {
+      if (box) box.scrollTop = boxY;
+      if (typeof window !== "undefined") window.scrollTo({ top: winY });
+    });
+  }
+
+  function captureAndRestore(which: "type" | "loc") {
+    const box = which === "type" ? typeListRef.current : locListRef.current;
+    const winY = typeof window !== "undefined" ? window.scrollY : 0;
+    const boxY = box?.scrollTop ?? 0;
+    return () => {
+      requestAnimationFrame(() => {
+        if (box) box.scrollTop = boxY;
+        if (typeof window !== "undefined") window.scrollTo({ top: winY });
+      });
+    };
+  }
 
   // delete (two-step)
   const [armedId, setArmedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const armDeleteOnce = (id: string) => {
-    setArmedId(id);
+  const armDeleteOnce = (id: string, which: "type" | "loc") => {
+    preserveScroll(() => setArmedId(id), which);
     if (armTimer.current) clearTimeout(armTimer.current);
     armTimer.current = setTimeout(() => setArmedId(null), 3500);
     toast.message("Press again to delete");
   };
 
-  // ====== ADD handlers (newest on top) ======
+  /* ====== ADD handlers (newest on top) ====== */
   const submitTypeAdd = () => {
     if (!canSaveType || pending) return;
+    const restore = captureAndRestore("type");
     startTransition(async () => {
       try {
         const created = await onAddType({
@@ -112,16 +340,20 @@ export default function ClientUI({
           description: tDesc.trim() || null,
         });
         setTypes((prev) => [created, ...prev]);
-        setTName(""); setTDesc("");
+        setTName("");
+        setTDesc("");
         toast.success("เพิ่ม Type สำเร็จ");
       } catch (e: any) {
         toast.error(e?.message || "เพิ่ม Type ไม่สำเร็จ");
+      } finally {
+        restore();
       }
     });
   };
 
   const submitLocationAdd = () => {
     if (!canSaveLoc || pending) return;
+    const restore = captureAndRestore("loc");
     startTransition(async () => {
       try {
         const created = await onAddLocation({
@@ -131,63 +363,71 @@ export default function ClientUI({
           description: lDesc.trim() || null,
         });
         setLocs((prev) => [created, ...prev]);
-        setBld(""); setRoom(""); setFloor(""); setLDesc("");
+        setBld("");
+        setRoom("");
+        setFloor("");
+        setLDesc("");
         toast.success("เพิ่ม Location สำเร็จ");
       } catch (e: any) {
         toast.error(e?.message || "เพิ่ม Location ไม่สำเร็จ");
+      } finally {
+        restore();
       }
     });
   };
 
-  // ====== EDIT: open/cancel/toggle ======
+  /* ====== EDIT: open/cancel/toggle ====== */
   const openTypeEdit = (row: TypeRow) => {
-    const restore = keepScroll("type");
-    setEditTypeId(row.id);
-    setTName(row.name || "");
-    setTDesc(row.description || "");
-    setTypeSaveArmed(false);
-    if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
-    restore();
+    preserveScroll(() => {
+      setEditTypeId(row.id);
+      setTName(row.name || "");
+      setTDesc(row.description || "");
+      setTypeSaveArmed(false);
+      if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
+    }, "type");
   };
   const cancelTypeEdit = () => {
-    const restore = keepScroll("type");
-    setEditTypeId(null);
-    setTName(""); setTDesc("");
-    setTypeSaveArmed(false);
-    if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
-    restore();
+    preserveScroll(() => {
+      setEditTypeId(null);
+      setTName("");
+      setTDesc("");
+      setTypeSaveArmed(false);
+      if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
+    }, "type");
   };
 
   const openLocEdit = (row: LocationRow) => {
-    const restore = keepScroll("loc");
-    setEditLocId(row.id);
-    setBld(row.building || "");
-    setRoom(row.room || "");
-    setFloor(typeof row.floor === "number" ? String(row.floor) : "");
-    setLDesc(row.description || "");
-    setLocSaveArmed(false);
-    if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
-    restore();
+    preserveScroll(() => {
+      setEditLocId(row.id);
+      setBld(row.building || "");
+      setRoom(row.room || "");
+      setFloor(typeof row.floor === "number" ? String(row.floor) : "");
+      setLDesc(row.description || "");
+      setLocSaveArmed(false);
+      if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
+    }, "loc");
   };
   const cancelLocEdit = () => {
-    const restore = keepScroll("loc");
-    setEditLocId(null);
-    setBld(""); setRoom(""); setFloor(""); setLDesc("");
-    setLocSaveArmed(false);
-    if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
-    restore();
+    preserveScroll(() => {
+      setEditLocId(null);
+      setBld("");
+      setRoom("");
+      setFloor("");
+      setLDesc("");
+      setLocSaveArmed(false);
+      if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
+    }, "loc");
   };
 
-  // ====== EDIT: two-tap confirm then save ======
+  /* ====== EDIT: two-tap confirm then save ====== */
   const armTypeSaveOnce = () => {
-    setTypeSaveArmed(true);
+    preserveScroll(() => setTypeSaveArmed(true), "type");
     if (typeSaveTimer.current) clearTimeout(typeSaveTimer.current);
     typeSaveTimer.current = setTimeout(() => setTypeSaveArmed(false), 3500);
     toast.message("Press again to save changes");
   };
-
   const armLocSaveOnce = () => {
-    setLocSaveArmed(true);
+    preserveScroll(() => setLocSaveArmed(true), "loc");
     if (locSaveTimer.current) clearTimeout(locSaveTimer.current);
     locSaveTimer.current = setTimeout(() => setLocSaveArmed(false), 3500);
     toast.message("Press again to save changes");
@@ -196,7 +436,7 @@ export default function ClientUI({
   const submitTypeEdit = () => {
     if (!editTypeId || !canSaveType || pending) return;
     if (!typeSaveArmed) return armTypeSaveOnce();
-    const restore = keepScroll("type");
+    const restore = captureAndRestore("type");
     startTransition(async () => {
       try {
         const updated = await onEditType({
@@ -204,7 +444,9 @@ export default function ClientUI({
           name: tName.trim(),
           description: tDesc.trim() || null,
         });
-        setTypes((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+        setTypes((prev) =>
+          prev.map((x) => (x.id === updated.id ? updated : x))
+        );
         cancelTypeEdit();
         toast.success("บันทึกการแก้ไข Type แล้ว");
       } catch (e: any) {
@@ -218,7 +460,7 @@ export default function ClientUI({
   const submitLocationEdit = () => {
     if (!editLocId || !canSaveLoc || pending) return;
     if (!locSaveArmed) return armLocSaveOnce();
-    const restore = keepScroll("loc");
+    const restore = captureAndRestore("loc");
     startTransition(async () => {
       try {
         const updated = await onEditLocation({
@@ -239,16 +481,14 @@ export default function ClientUI({
     });
   };
 
-  // ====== DELETE (two-tap) ======
+  /* ====== DELETE (two-tap) ====== */
   const deleteType = (id: string, name: string) => {
     if (busyId || pending) return;
     if (armedId !== id) {
-      const restore = keepScroll("type");
-      armDeleteOnce(id);
-      restore();
+      armDeleteOnce(id, "type");
       return;
     }
-    const restore = keepScroll("type");
+    const restore = captureAndRestore("type");
     setBusyId(id);
     startTransition(async () => {
       try {
@@ -268,12 +508,10 @@ export default function ClientUI({
   const deleteLocation = (id: string, label: string) => {
     if (busyId || pending) return;
     if (armedId !== id) {
-      const restore = keepScroll("loc");
-      armDeleteOnce(id);
-      restore();
+      armDeleteOnce(id, "loc");
       return;
     }
-    const restore = keepScroll("loc");
+    const restore = captureAndRestore("loc");
     setBusyId(id);
     startTransition(async () => {
       try {
@@ -290,134 +528,17 @@ export default function ClientUI({
     });
   };
 
-  const EmptyHint = ({ text }: { text: string }) => (
-    <div className="text-sm text-muted-foreground">{text}</div>
-  );
-
-  // ====== Lists (toggle edit with blue highlight) ======
-  const TypeList = () => (
-    types.length ? (
-      <div ref={typeListRef} className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
-        <ul className="w-full divide-y">
-          {types.map((t) => {
-            const armedDel = armedId === t.id;
-            const busy = busyId === t.id;
-            const isEditing = editTypeId === t.id;
-            return (
-              <li
-                key={t.id}
-                className={`w-full p-3 pl-4 pr-2 rounded-md ${
-                  isEditing ? "bg-sky-500/10 ring-1 ring-sky-400" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{t.name}</div>
-                    {t.description ? (
-                      <div className="text-sm text-muted-foreground line-clamp-2">
-                        {t.description}
-                      </div>
-                    ) : null}
-                  </div>
-                  <Button
-                    variant={isEditing ? "secondary" : "ghost"}
-                    size="icon"
-                    className={isEditing ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : ""}
-                    onClick={() => {
-                      if (isEditing) {
-                        cancelTypeEdit();
-                      } else {
-                        openTypeEdit(t);
-                      }
-                    }}
-                    aria-label={`Edit ${t.name}`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={armedDel ? "destructive" : "ghost"}
-                    size="icon"
-                    className={armedDel ? "" : "text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"}
-                    onClick={() => deleteType(t.id, t.name)}
-                    disabled={busy}
-                    aria-label={`Delete ${t.name}`}
-                  >
-                    {armedDel ? <Check className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    ) : <EmptyHint text="ยังไม่มีข้อมูล" />
-  );
-
-  const LocationList = () => (
-    locs.length ? (
-      <div ref={locListRef} className="w-full max-h-72 overflow-y-auto rounded-lg border bg-background/40">
-        <ul className="w-full divide-y">
-          {locs.map((l) => {
-            const label = `${l.building}-${l.room}`;
-            const armedDel = armedId === l.id;
-            const busy = busyId === l.id;
-            const isEditing = editLocId === l.id;
-            return (
-              <li
-                key={l.id}
-                className={`w-full p-3 pl-4 pr-2 rounded-md ${
-                  isEditing ? "bg-sky-500/10 ring-1 ring-sky-400" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{label}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {typeof l.floor === "number" ? `ชั้น ${l.floor}` : "ไม่ระบุชั้น"}
-                      {l.description ? ` • ${l.description}` : ""}
-                    </div>
-                  </div>
-                  <Button
-                    variant={isEditing ? "secondary" : "ghost"}
-                    size="icon"
-                    className={isEditing ? "bg-sky-500/15 text-sky-700 dark:text-sky-300" : ""}
-                    onClick={() => {
-                      if (isEditing) {
-                        cancelLocEdit();
-                      } else {
-                        openLocEdit(l);
-                      }
-                    }}
-                    aria-label={`Edit ${label}`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={armedDel ? "destructive" : "ghost"}
-                    size="icon"
-                    className={armedDel ? "" : "text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"}
-                    onClick={() => deleteLocation(l.id, label)}
-                    disabled={busy}
-                    aria-label={`Delete ${label}`}
-                  >
-                    {armedDel ? <Check className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    ) : <EmptyHint text="ยังไม่มีข้อมูล" />
-  );
-
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8">
       <div className="flex items-center gap-3 mb-6">
         <Database className="h-6 w-6" />
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Selection management</h1>
-          <p className="text-muted-foreground">จัดการรายการเลือก (Type / Location) — Admin only</p>
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Selection management
+          </h1>
+          <p className="text-muted-foreground">
+            จัดการรายการเลือก (Type / Location) — Admin only
+          </p>
         </div>
       </div>
 
@@ -437,10 +558,21 @@ export default function ClientUI({
             <Card>
               <CardHeader>
                 <CardTitle>รายการที่มีอยู่</CardTitle>
-                <CardDescription>ดู/แก้ไข/ลบ ประเภททั้งหมด (เลื่อนรายการได้)</CardDescription>
+                <CardDescription>
+                  ดู/แก้ไข/ลบ ประเภททั้งหมด (เลื่อนรายการได้)
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-4 w-full">
-                <TypeList />
+                <TypeList
+                  ref={typeListRef}
+                  items={types}
+                  armedId={armedId}
+                  busyId={busyId}
+                  editId={editTypeId}
+                  onToggleEdit={openTypeEdit}
+                  onCancelEdit={cancelTypeEdit}
+                  onDelete={deleteType}
+                />
               </CardContent>
             </Card>
 
@@ -448,7 +580,9 @@ export default function ClientUI({
               <CardHeader>
                 <CardTitle>{editTypeId ? "Edit Type" : "Add Type"}</CardTitle>
                 <CardDescription>
-                  {editTypeId ? "แก้ไขรายละเอียดประเภทคุรุภัณฑ์" : "ตั้งชื่อประเภทคุรุภัณฑ์"}
+                  {editTypeId
+                    ? "แก้ไขรายละเอียดประเภทคุรุภัณฑ์"
+                    : "ตั้งชื่อประเภทคุรุภัณฑ์"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 w-full">
@@ -460,7 +594,10 @@ export default function ClientUI({
                     autoComplete="off"
                     placeholder="เช่น คอมพิวเตอร์, เฟอร์นิเจอร์"
                     value={tName}
-                    onChange={(e) => { setTName(e.target.value); setTypeSaveArmed(false); }}
+                    onChange={(e) => {
+                      setTName(e.target.value);
+                      setTypeSaveArmed(false);
+                    }}
                     disabled={pending}
                   />
                 </div>
@@ -471,7 +608,10 @@ export default function ClientUI({
                     className="min-h-[112px] text-base"
                     placeholder="คำอธิบายเพิ่มเติม (ถ้ามี)"
                     value={tDesc}
-                    onChange={(e) => { setTDesc(e.target.value); setTypeSaveArmed(false); }}
+                    onChange={(e) => {
+                      setTDesc(e.target.value);
+                      setTypeSaveArmed(false);
+                    }}
                     disabled={pending}
                   />
                 </div>
@@ -480,7 +620,11 @@ export default function ClientUI({
                   {editTypeId ? (
                     <>
                       <Button
-                        className={`gap-2 ${!typeSaveArmed ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+                        className={`gap-2 ${
+                          !typeSaveArmed
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            : ""
+                        }`}
                         variant={typeSaveArmed ? "destructive" : "default"}
                         onClick={submitTypeEdit}
                         disabled={!canSaveType || pending}
@@ -488,12 +632,20 @@ export default function ClientUI({
                         <Check className="h-4 w-4" />
                         {typeSaveArmed ? "Confirm save" : "Save changes"}
                       </Button>
-                      <Button variant="ghost" onClick={cancelTypeEdit} className="gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={cancelTypeEdit}
+                        className="gap-2"
+                      >
                         <X className="h-4 w-4" /> Cancel
                       </Button>
                     </>
                   ) : (
-                    <Button className="gap-2" onClick={submitTypeAdd} disabled={!canSaveType || pending}>
+                    <Button
+                      className="gap-2"
+                      onClick={submitTypeAdd}
+                      disabled={!canSaveType || pending}
+                    >
                       <Plus className="h-4 w-4" /> Add record
                     </Button>
                   )}
@@ -509,16 +661,29 @@ export default function ClientUI({
             <Card>
               <CardHeader>
                 <CardTitle>รายการที่มีอยู่</CardTitle>
-                <CardDescription>ดู/แก้ไข/ลบ สถานที่ทั้งหมด (เลื่อนรายการได้)</CardDescription>
+                <CardDescription>
+                  ดู/แก้ไข/ลบ สถานที่ทั้งหมด (เลื่อนรายการได้)
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-4 w-full">
-                <LocationList />
+                <LocationList
+                  ref={locListRef}
+                  items={locs}
+                  armedId={armedId}
+                  busyId={busyId}
+                  editId={editLocId}
+                  onToggleEdit={openLocEdit}
+                  onCancelEdit={cancelLocEdit}
+                  onDelete={deleteLocation}
+                />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>{editLocId ? "Edit Location" : "Add Location"}</CardTitle>
+                <CardTitle>
+                  {editLocId ? "Edit Location" : "Add Location"}
+                </CardTitle>
                 <CardDescription>
                   {editLocId ? "แก้ไขรายละเอียดสถานที่" : "ระบุอาคาร/ห้อง/ชั้น"}
                 </CardDescription>
@@ -532,7 +697,10 @@ export default function ClientUI({
                       className="h-12 text-base"
                       placeholder="เช่น E, M"
                       value={bld}
-                      onChange={(e) => { setBld(e.target.value); setLocSaveArmed(false); }}
+                      onChange={(e) => {
+                        setBld(e.target.value);
+                        setLocSaveArmed(false);
+                      }}
                       disabled={pending}
                     />
                   </div>
@@ -543,7 +711,10 @@ export default function ClientUI({
                       className="h-12 text-base"
                       placeholder="เช่น 107, 109"
                       value={room}
-                      onChange={(e) => { setRoom(e.target.value); setLocSaveArmed(false); }}
+                      onChange={(e) => {
+                        setRoom(e.target.value);
+                        setLocSaveArmed(false);
+                      }}
                       disabled={pending}
                     />
                   </div>
@@ -555,7 +726,10 @@ export default function ClientUI({
                       className="h-12 text-base"
                       placeholder="ชั้น"
                       value={floor}
-                      onChange={(e) => { setFloor(e.target.value); setLocSaveArmed(false); }}
+                      onChange={(e) => {
+                        setFloor(e.target.value);
+                        setLocSaveArmed(false);
+                      }}
                       disabled={pending}
                     />
                   </div>
@@ -567,7 +741,10 @@ export default function ClientUI({
                     className="min-h-[112px] text-base"
                     placeholder="คำอธิบายเพิ่มเติม (ถ้ามี)"
                     value={lDesc}
-                    onChange={(e) => { setLDesc(e.target.value); setLocSaveArmed(false); }}
+                    onChange={(e) => {
+                      setLDesc(e.target.value);
+                      setLocSaveArmed(false);
+                    }}
                     disabled={pending}
                   />
                 </div>
@@ -576,7 +753,11 @@ export default function ClientUI({
                   {editLocId ? (
                     <>
                       <Button
-                        className={`gap-2 ${!locSaveArmed ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+                        className={`gap-2 ${
+                          !locSaveArmed
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            : ""
+                        }`}
                         variant={locSaveArmed ? "destructive" : "default"}
                         onClick={submitLocationEdit}
                         disabled={!canSaveLoc || pending}
@@ -584,12 +765,20 @@ export default function ClientUI({
                         <Check className="h-4 w-4" />
                         {locSaveArmed ? "Confirm save" : "Save changes"}
                       </Button>
-                      <Button variant="ghost" onClick={cancelLocEdit} className="gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={cancelLocEdit}
+                        className="gap-2"
+                      >
                         <X className="h-4 w-4" /> Cancel
                       </Button>
                     </>
                   ) : (
-                    <Button className="gap-2" onClick={submitLocationAdd} disabled={!canSaveLoc || pending}>
+                    <Button
+                      className="gap-2"
+                      onClick={submitLocationAdd}
+                      disabled={!canSaveLoc || pending}
+                    >
                       <Plus className="h-4 w-4" /> Add record
                     </Button>
                   )}

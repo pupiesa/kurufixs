@@ -11,20 +11,56 @@ export const runtime = "nodejs";
 
 /* ---------- Pills ---------- */
 function StatusPill({ status }: { status: string }) {
-  const s = (status || "").toLowerCase().trim().replace(/\s+|-+/g, "_");
-  const THEME: Record<
-    string,
-    { badge: string; dot: string; label: string }
-  > = {
-    pending:     { badge: "bg-amber-500/15 text-amber-700 border-amber-400/30",   dot: "bg-amber-500",   label: "Pending" },
-    open:        { badge: "bg-blue-500/15 text-blue-700 border-blue-400/30",      dot: "bg-blue-500",    label: "Open" },
-    in_progress: { badge: "bg-sky-500/15 text-sky-700 border-sky-400/30",         dot: "bg-sky-500",     label: "In Progress" },
-    on_hold:     { badge: "bg-yellow-500/15 text-yellow-700 border-yellow-400/30",dot: "bg-yellow-500",  label: "On Hold" },
-    resolved:    { badge: "bg-emerald-500/15 text-emerald-700 border-emerald-400/30", dot: "bg-emerald-500", label: "Resolved" },
-    closed:      { badge: "bg-slate-500/15 text-slate-700 border-slate-400/30",   dot: "bg-slate-500",   label: "Closed" },
-    cancelled:   { badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",      dot: "bg-rose-500",    label: "Cancelled" },
-    rejected:    { badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",      dot: "bg-rose-500",    label: "Rejected" },
-    approved:    { badge: "bg-green-500/15 text-green-700 border-green-400/30",   dot: "bg-green-500",   label: "Approved" },
+  const s = (status || "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+|-+/g, "_");
+  const THEME: Record<string, { badge: string; dot: string; label: string }> = {
+    pending: {
+      badge: "bg-amber-500/15 text-amber-700 border-amber-400/30",
+      dot: "bg-amber-500",
+      label: "Pending",
+    },
+    open: {
+      badge: "bg-blue-500/15 text-blue-700 border-blue-400/30",
+      dot: "bg-blue-500",
+      label: "Open",
+    },
+    in_progress: {
+      badge: "bg-sky-500/15 text-sky-700 border-sky-400/30",
+      dot: "bg-sky-500",
+      label: "In Progress",
+    },
+    on_hold: {
+      badge: "bg-yellow-500/15 text-yellow-700 border-yellow-400/30",
+      dot: "bg-yellow-500",
+      label: "On Hold",
+    },
+    resolved: {
+      badge: "bg-emerald-500/15 text-emerald-700 border-emerald-400/30",
+      dot: "bg-emerald-500",
+      label: "Resolved",
+    },
+    closed: {
+      badge: "bg-slate-500/15 text-slate-700 border-slate-400/30",
+      dot: "bg-slate-500",
+      label: "Closed",
+    },
+    cancelled: {
+      badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",
+      dot: "bg-rose-500",
+      label: "Cancelled",
+    },
+    rejected: {
+      badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",
+      dot: "bg-rose-500",
+      label: "Rejected",
+    },
+    approved: {
+      badge: "bg-green-500/15 text-green-700 border-green-400/30",
+      dot: "bg-green-500",
+      label: "Approved",
+    },
   };
   const t = THEME[s] ?? THEME.open;
 
@@ -49,7 +85,9 @@ function UrgencyPill({ urgency }: { urgency?: string | null }) {
   };
   const cls = MAP[u] ?? "bg-slate-500/15 text-slate-600 border-slate-400/30";
   return (
-    <span className={`inline-flex items-center rounded-full border ${cls} px-2 py-0.5 text-[11px] font-medium`}>
+    <span
+      className={`inline-flex items-center rounded-full border ${cls} px-2 py-0.5 text-[11px] font-medium`}
+    >
       {u || "-"}
     </span>
   );
@@ -58,7 +96,10 @@ function UrgencyPill({ urgency }: { urgency?: string | null }) {
 function fmtDate(d?: Date | string | null) {
   if (!d) return "-";
   const dt = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(dt);
+  return new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(dt);
 }
 
 /* ---------- Page ---------- */
@@ -107,7 +148,7 @@ export default async function StatusDetailPage({ params }: PageProps) {
       </div>
 
       {/* Main Card */}
-      <Card className="rounded-2xl border border-border/60 shadow-sm">
+      <Card className="rounded-2xl border border-border/60 shadow-sm mx-5">
         <CardHeader className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="text-base font-semibold tracking-tight">
@@ -122,12 +163,14 @@ export default async function StatusDetailPage({ params }: PageProps) {
 
         <Separator />
 
-        <CardContent className="py-6 space-y-6">
+        <CardContent className="py-y space-y-6 mx-auto">
           {/* Title + Asset */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-2">
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Title</div>
-              <div className="font-medium leading-snug">{item.issueTitle || "-"}</div>
+              <div className="font-medium leading-snug">
+                {item.issueTitle || "-"}
+              </div>
             </div>
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Asset</div>
@@ -150,7 +193,9 @@ export default async function StatusDetailPage({ params }: PageProps) {
                 <Tag className="h-3.5 w-3.5" />
                 Urgency
               </div>
-              <UrgencyPill urgency={item.urgency} />
+              <div>
+                <UrgencyPill urgency={item.urgency} />
+              </div>
             </div>
 
             <div className="space-y-1">
