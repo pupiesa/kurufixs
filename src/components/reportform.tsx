@@ -341,6 +341,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="ชำรุด">ชำรุด</SelectItem>
+                            <SelectItem value="สูญหาย">สูญหาย</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

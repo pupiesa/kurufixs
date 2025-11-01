@@ -12,6 +12,7 @@ export async function POST(req: Request) {
       assetCodeManual,
       assetNameManual,
       assetTypeName,
+      assetStatusName,
       issueTitle,
       issueDescription,
       issueCategory,
@@ -29,11 +30,12 @@ export async function POST(req: Request) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1) เตรียมสถานะ "ชำรุด"
-      const brokenStatus = await tx.assetStatus.upsert({
-        where: { name: "ชำรุด" },
+      // 1) Prepare asset status
+      const statusName = assetStatusName || "ชำรุด";
+      const status = await tx.assetStatus.upsert({
+        where: { name: statusName },
         update: {},
-        create: { name: "ชำรุด" },
+        create: { name: statusName },
         select: { id: true },
       });
 
@@ -87,7 +89,7 @@ export async function POST(req: Request) {
         // อัปเดตสถานะเป็นชำรุด
         const updated = await tx.asset.update({
           where: { id: String(assetId) },
-          data: { statusId: brokenStatus.id },
+          data: { statusId: status.id },
           select: { id: true },
         });
         finalAssetId = updated.id;
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
                 : `TMP-${Date.now()}`,
             assetName: String(assetNameManual || "ครุภัณฑ์ไม่ทราบชื่อ"),
             typeId: typeId!, // มาจากขั้นตอน 2
-            statusId: brokenStatus.id, // บังคับเป็นชำรุด
+            statusId: status.id, // บังคับเป็นชำรุด
           },
           select: { id: true },
         });
