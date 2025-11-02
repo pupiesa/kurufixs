@@ -13,7 +13,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import prisma from "@/lib/db";
 
@@ -21,9 +20,83 @@ interface AssetDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function AssetDetailPage({
-  params,
-}: AssetDetailPageProps) {
+/* ===== สีป้ายสถานะแบบเดียวกับตาราง (มีจุด) ===== */
+function getStatusStyle(raw: string) {
+  const v = String(raw ?? "").trim();
+
+  const isInUse = /(ใช้งานอยู่|กำลังใช้งาน|in[\s_-]*use|using)/i.test(v);
+  const isBroken = /(ชำรุด|เสีย|พัง|broken|damaged)/i.test(v);
+  const isLost = /(สูญหาย|หาย|หาไม่พบ|lost|missing)/i.test(v);
+
+  const isOpen = /(open)/i.test(v);
+  const isPending = /(pending|awaiting|รอดำเนินการ)/i.test(v);
+  const isInProgress = /(in[\s_-]*progress|กำลังดำเนินการ)/i.test(v);
+  const isFixed = /(fixed|resolved|ซ่อมเสร็จ)/i.test(v);
+  const isClosed = /(closed|ปิดงาน)/i.test(v);
+
+  let bg = "bg-zinc-500/15";
+  let text = "text-zinc-300";
+  let ring = "ring-zinc-500/30";
+  let dot = "bg-zinc-300";
+
+  if (isInUse) {
+    bg = "bg-emerald-500/15";
+    text = "text-emerald-400";
+    ring = "ring-emerald-500/30";
+    dot = "bg-emerald-400";
+  } else if (isBroken) {
+    bg = "bg-rose-500/15";
+    text = "text-rose-400";
+    ring = "ring-rose-500/25";
+    dot = "bg-rose-400";
+  } else if (isLost || isPending) {
+    bg = "bg-amber-500/15";
+    text = "text-amber-400";
+    ring = "ring-amber-500/25";
+    dot = "bg-amber-400";
+  } else if (isOpen) {
+    bg = "bg-sky-500/15";
+    text = "text-sky-400";
+    ring = "ring-sky-500/25";
+    dot = "bg-sky-400";
+  } else if (isInProgress) {
+    bg = "bg-cyan-500/15";
+    text = "text-cyan-400";
+    ring = "ring-cyan-500/25";
+    dot = "bg-cyan-400";
+  } else if (isFixed) {
+    bg = "bg-emerald-500/15";
+    text = "text-emerald-400";
+    ring = "ring-emerald-500/25";
+    dot = "bg-emerald-400";
+  } else if (isClosed) {
+    bg = "bg-zinc-500/15";
+    text = "text-zinc-300";
+    ring = "ring-zinc-500/25";
+    dot = "bg-zinc-300";
+  }
+
+  return { bg, text, ring, dot };
+}
+
+function StatusPill({ value }: { value?: string | null }) {
+  const raw = String(value ?? "").trim();
+  const { bg, text, ring, dot } = getStatusStyle(raw);
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
+        "ring-1", bg, text, ring,
+      ].join(" ")}
+      title={raw}
+    >
+      <span className={["h-2.5 w-2.5 rounded-full", dot].join(" ")} />
+      {raw || "-"}
+    </span>
+  );
+}
+
+export default async function AssetDetailPage({ params }: AssetDetailPageProps) {
   const { id } = await params;
 
   const asset = await prisma.asset.findUnique({
@@ -34,12 +107,8 @@ export default async function AssetDetailPage({
       type: true,
       staff: true,
       RepairReport: {
-        include: {
-          activities: true,
-        },
-        orderBy: {
-          reportedAt: "desc",
-        },
+        include: { activities: true },
+        orderBy: { reportedAt: "desc" },
         take: 5,
       },
     },
@@ -47,7 +116,6 @@ export default async function AssetDetailPage({
 
   if (!asset) return notFound();
 
-  // Format currency
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return "-";
     return new Intl.NumberFormat("th-TH", {
@@ -56,7 +124,6 @@ export default async function AssetDetailPage({
     }).format(amount);
   };
 
-  // Format date
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("th-TH", {
@@ -84,13 +151,7 @@ export default async function AssetDetailPage({
                 <Package2 className="h-6 w-6" />
                 {asset.assetName}
               </CardTitle>
-              <Badge
-                variant={
-                  asset.status?.name === "IN_USE" ? "default" : "destructive"
-                }
-              >
-                {asset.status?.name}
-              </Badge>
+              <StatusPill value={asset.status?.name} />
             </div>
             <div className="text-sm text-muted-foreground mt-1">
               Asset Code: {asset.assetCode}
@@ -184,38 +245,27 @@ export default async function AssetDetailPage({
           </CardContent>
         </Card>
 
-        {/* Recent Repair History */}
+        {/* Recent Repair History → ใช้ป้ายสถานะมีจุดด้วย */}
         {asset.RepairReport && asset.RepairReport.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Recent Repair History</CardTitle>
             </CardHeader>
             <CardContent className="px-10">
-              <div className="flex flex-row gap-x-5">
+              <div className="flex flex-col gap-4">
                 {asset.RepairReport.map((report) => (
                   <div key={report.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="min-w-0">
                         <h4 className="font-medium">{report.issueTitle}</h4>
                         <p className="text-sm text-muted-foreground mt-1">
                           {report.issueDescription}
                         </p>
                       </div>
-                      <Badge
-                        variant={
-                          report.status === "FIXED"
-                            ? "default"
-                            : report.status === "IN_PROGRESS"
-                            ? "secondary"
-                            : "destructive"
-                        }
-                      >
-                        {report.status}
-                      </Badge>
+                      <StatusPill value={report.status} />
                     </div>
                     <div className="text-sm text-muted-foreground mt-2">
-                      Reported:{" "}
-                      {new Date(report.reportedAt).toLocaleDateString()}
+                      Reported: {new Date(report.reportedAt).toLocaleDateString()}
                     </div>
                   </div>
                 ))}

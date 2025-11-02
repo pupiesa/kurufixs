@@ -10,18 +10,94 @@ import { Input } from "@/components/ui/input";
 import { EditDialog } from "./edit-dialog";
 import type { AssetRow } from "./page";
 
-/** ===== helpers ===== */
+/* ========== helpers ========== */
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-/** สร้างแพทเทิร์นแบบ "ไม่สนช่องว่าง" → a b c  = /a\s*b\s*c/i */
 function toLoosePattern(query: string) {
   const q = query.trim();
   if (!q) return "";
   const chars = [...q].map((ch) => escapeRegExp(ch));
-  // \s* ระหว่างทุกตัวอักษร เพื่อให้พิมพ์ติด/เว้นวรรคก็แมตช์ได้
   return `${chars.join("\\s*")}`;
+}
+
+/** สีของสถานะ + สีจุด */
+function getStatusStyle(raw: string) {
+  const v = String(raw ?? "").trim();
+
+  const isInUse = /(ใช้งานอยู่|กำลังใช้งาน|in[\s_-]*use|using)/i.test(v);
+  const isBroken = /(ชำรุด|เสีย|พัง|broken|damaged)/i.test(v);
+  const isLost = /(สูญหาย|หาย|หาไม่พบ|lost|missing)/i.test(v);
+
+  const isOpen = /(open)/i.test(v);
+  const isPending = /(pending|awaiting|รอดำเนินการ)/i.test(v);
+  const isInProgress = /(in[\s_-]*progress|กำลังดำเนินการ)/i.test(v);
+  const isFixed = /(fixed|resolved|ซ่อมเสร็จ)/i.test(v);
+  const isClosed = /(closed|ปิดงาน)/i.test(v);
+
+  // default เทา
+  let bg = "bg-zinc-500/15";
+  let text = "text-zinc-300";
+  let ring = "ring-zinc-500/30";
+  let dot = "bg-zinc-300";
+
+  if (isInUse) {
+    bg = "bg-emerald-500/15";
+    text = "text-emerald-400";
+    ring = "ring-emerald-500/30";
+    dot = "bg-emerald-400";
+  } else if (isBroken) {
+    bg = "bg-rose-500/15";
+    text = "text-rose-400";
+    ring = "ring-rose-500/25";
+    dot = "bg-rose-400";
+  } else if (isLost || isPending) {
+    bg = "bg-amber-500/15";
+    text = "text-amber-400";
+    ring = "ring-amber-500/25";
+    dot = "bg-amber-400";
+  } else if (isOpen) {
+    bg = "bg-sky-500/15";
+    text = "text-sky-400";
+    ring = "ring-sky-500/25";
+    dot = "bg-sky-400";
+  } else if (isInProgress) {
+    bg = "bg-cyan-500/15";
+    text = "text-cyan-400";
+    ring = "ring-cyan-500/25";
+    dot = "bg-cyan-400";
+  } else if (isFixed) {
+    bg = "bg-emerald-500/15";
+    text = "text-emerald-400";
+    ring = "ring-emerald-500/25";
+    dot = "bg-emerald-400";
+  } else if (isClosed) {
+    bg = "bg-zinc-500/15";
+    text = "text-zinc-300";
+    ring = "ring-zinc-500/25";
+    dot = "bg-zinc-300";
+  }
+
+  return { bg, text, ring, dot };
+}
+
+/** 🔹 ป้ายสถานะ (มี “จุดสี” นำหน้า) */
+function StatusPill({ value }: { value?: string | null }) {
+  const raw = String(value ?? "").trim();
+  const { bg, text, ring, dot } = getStatusStyle(raw);
+
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
+        "ring-1", bg, text, ring,
+      ].join(" ")}
+      title={raw}
+    >
+      <span className={["h-2.5 w-2.5 rounded-full", dot].join(" ")} />
+      {raw || "-"}
+    </span>
+  );
 }
 
 function HighlightLoose({
@@ -44,7 +120,6 @@ function HighlightLoose({
     const start = m.index;
     const end = start + m[0].length;
     if (start > last) out.push(<span key={`t-${last}`}>{value.slice(last, start)}</span>);
-    // ไฮไลต์พื้นหลังฟ้าเข้ม + "ตัวอักษรสีขาว"
     out.push(
       <mark
         key={`h-${start}`}
@@ -60,12 +135,16 @@ function HighlightLoose({
   return <>{out}</>;
 }
 
-/** ===== base columns ===== */
+/* ========== table columns ========== */
 const baseColumns: ColumnDef<AssetRow>[] = [
   { accessorKey: "assetCode", header: "Asset Code" },
   { accessorKey: "assetName", header: "Asset Name" },
   { accessorKey: "type", header: "Type" },
-  { accessorKey: "status", header: "Status" },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ getValue }) => <StatusPill value={String(getValue() ?? "")} />,
+  },
   { accessorKey: "location", header: "Location" },
   {
     id: "detail",
@@ -115,13 +194,11 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
 
   React.useEffect(() => setLocalData(data ?? []), [data]);
 
-  // ใช้ "แพทเทิร์นเดียวกัน" ทั้งกรองและไฮไลต์
   const loosePattern = React.useMemo(() => toLoosePattern(q), [q]);
 
   const visibleData = React.useMemo(() => {
     if (!loosePattern) return localData;
-    const tester = new RegExp(loosePattern, "i"); // ไม่มี g เพื่อเลี่ยง lastIndex side-effect
-
+    const tester = new RegExp(loosePattern, "i");
     return localData.filter((r) => {
       const get = (k: keyof AssetRow) => String((r as any)[k] ?? "");
       if (field === "all") {
@@ -174,7 +251,6 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
       "assetCode",
       "assetName",
       "type",
-      "status",
       "location",
     ]);
 
@@ -190,16 +266,8 @@ export function AssetTable({ data, userRole }: AssetTableProps) {
           ...c,
           cell: (ctx) => {
             const text = String(ctx.getValue() ?? "");
-
-            // ✅ แก้ TS2349: เรียกเฉพาะกรณี origCell เป็นฟังก์ชัน
-            if (typeof origCell === "function") {
-              return origCell(ctx);
-            }
-            // ถ้า origCell เป็นสตริง/ReactNode ให้คืนตามเดิม
-            if (origCell !== undefined) {
-              return origCell as React.ReactNode;
-            }
-            // ไม่มี cell เดิม → ใช้ไฮไลต์
+            if (typeof origCell === "function") return origCell(ctx);
+            if (origCell !== undefined) return origCell as React.ReactNode;
             return <HighlightLoose text={text} query={q} />;
           },
         } as ColumnDef<AssetRow>;
