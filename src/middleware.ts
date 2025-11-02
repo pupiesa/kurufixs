@@ -2,7 +2,26 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+const trustedHosts = [
+  'www.bookingonline.software',
+  'bunsom2504.3bbddns.com:56610',
+  'localhost:3000'
+];
+
 export async function middleware(req: NextRequest) {
+  // Check if the host is trusted
+  const hostname = req.headers.get('host') || '';
+  const isTrustedHost = trustedHosts.some(host => hostname.includes(host));
+  
+  if (!isTrustedHost) {
+    return new NextResponse(null, {
+      status: 400,
+      statusText: 'Bad Request',
+      headers: {
+        'Content-Type': 'text/plain',
+      }
+    });
+  }
   const { pathname } = req.nextUrl;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const role = (token as any)?.role ?? null;

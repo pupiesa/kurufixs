@@ -41,7 +41,7 @@ type MenuItem = {
 
 function useRole() {
   const { data: session } = useSession();
-  return (session?.user as any)?.role ?? null;
+  return (session?.user as any)?.role ?? null; // "user" | "staff" | "admin" | null
 }
 
 function BrandHeader() {
@@ -63,14 +63,16 @@ function BrandHeader() {
 }
 
 function makeIsActive(pathname: string) {
-  return (href: string) => {
-    const cur = pathname.replace(/\/+$/, "");
-    const link = href.replace(/\/+$/, "");
+  const normalize = (p: string) => (p === "/" ? "/" : p.replace(/\/+$/, ""));
+  const cur = normalize(pathname);
 
-    // กรณี /admin ให้ active เฉพาะตรงหน้า /admin เท่านั้น
+  return (href: string) => {
+    const link = normalize(href);
+
+    if (link === "/") return cur === "/";
+
     if (link === "/admin") return cur === "/admin";
 
-    // กรณีอื่น ๆ: ตรงกันพอดี หรืออยู่ใต้เส้นทางนั้น
     return cur === link || cur.startsWith(link + "/");
   };
 }
