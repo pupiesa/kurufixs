@@ -72,6 +72,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
   const [manualAsset, setManualAsset] = useState(false);
   const [assetTypes, setAssetTypes] = useState<string[]>([]);
   const [typesLoading, setTypesLoading] = useState(false);
+  const [assetQuery, setAssetQuery] = useState("");
 
   // โหลดประเภทครุภัณฑ์เมื่อสลับเป็นโหมด manual
   useEffect(() => {
@@ -138,6 +139,15 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
   const selectedAsset = useMemo<AssetOption | undefined>(() => {
     return assets.find((a: AssetOption) => a.id === watchedAssetId);
   }, [assets, watchedAssetId]);
+
+  // Filtered list for the searchable select
+  const filteredAssets = useMemo<AssetOption[]>(() => {
+    const q = String(assetQuery || "").trim().toLowerCase();
+    if (!q) return assets;
+    return assets.filter((a) =>
+      `${a.assetCode} ${a.assetName}`.toLowerCase().includes(q)
+    );
+  }, [assets, assetQuery]);
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
@@ -224,19 +234,41 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>ครุภัณฑ์</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          setAssetQuery("");
+                        }}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="เลือกครุภัณฑ์" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {/* Inline search input inside dropdown */}
+                          <div className="px-3 py-2">
+                            <Input
+                              placeholder="ค้นหาด้วยรหัสหรือชื่อครุภัณฑ์..."
+                              value={assetQuery}
+                              onChange={(e) => setAssetQuery(e.target.value)}
+                            />
+                          </div>
+
                           {assets.length === 0 && (
                             <div className="px-3 py-2 text-sm text-muted-foreground">
                               ไม่มีข้อมูลครุภัณฑ์ในระบบ
                             </div>
                           )}
-                          {assets.map((a) => (
+
+                          {filteredAssets.length === 0 && assets.length > 0 && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              ไม่พบผลลัพธ์สำหรับ "{assetQuery}"
+                            </div>
+                          )}
+
+                          {filteredAssets.map((a) => (
                             <SelectItem key={a.id} value={a.id}>
                               {a.assetCode} — {a.assetName}
                             </SelectItem>
