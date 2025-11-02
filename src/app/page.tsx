@@ -38,7 +38,6 @@ export default async function Home() {
               total={status.length}
               title="Under Repair"
               desc="Currently being serviced"
-              urgentCount={urgentCount}
             />
           </div>
           <div className="basis-full">
