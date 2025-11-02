@@ -9,60 +9,50 @@ import { SquareArrowLeft, MapPin, Tag, CalendarClock } from "lucide-react";
 
 export const runtime = "nodejs";
 
-/* ---------- Pills ---------- */
+/* ---------- Status Pill (4 สถานะตามรูป) ---------- */
 function StatusPill({ status }: { status: string }) {
-  const s = (status || "")
-    .toLowerCase()
-    .trim()
-    .replace(/\s+|-+/g, "_");
-  const THEME: Record<string, { badge: string; dot: string; label: string }> = {
+  const s = (status || "").toLowerCase().trim().replace(/\s+|-+/g, "_");
+
+  const THEME = {
     pending: {
-      badge: "bg-amber-500/15 text-amber-700 border-amber-400/30",
+      badge: "bg-amber-500/10 text-amber-300 border-amber-500/40",
       dot: "bg-amber-500",
       label: "Pending",
     },
-    open: {
-      badge: "bg-blue-500/15 text-blue-700 border-blue-400/30",
-      dot: "bg-blue-500",
-      label: "Open",
-    },
     in_progress: {
-      badge: "bg-sky-500/15 text-sky-700 border-sky-400/30",
-      dot: "bg-sky-500",
+      badge: "bg-blue-500/10 text-blue-300 border-blue-500/40",
+      dot: "bg-blue-500",
       label: "In Progress",
     },
-    on_hold: {
-      badge: "bg-yellow-500/15 text-yellow-700 border-yellow-400/30",
-      dot: "bg-yellow-500",
-      label: "On Hold",
-    },
-    resolved: {
-      badge: "bg-emerald-500/15 text-emerald-700 border-emerald-400/30",
+    fixed: {
+      badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40",
       dot: "bg-emerald-500",
-      label: "Resolved",
+      label: "Fixed",
     },
     closed: {
-      badge: "bg-slate-500/15 text-slate-700 border-slate-400/30",
-      dot: "bg-slate-500",
+      badge: "bg-zinc-500/10 text-zinc-300 border-zinc-500/40",
+      dot: "bg-zinc-400",
       label: "Closed",
     },
-    cancelled: {
-      badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",
-      dot: "bg-rose-500",
-      label: "Cancelled",
-    },
-    rejected: {
-      badge: "bg-rose-500/15 text-rose-700 border-rose-400/30",
-      dot: "bg-rose-500",
-      label: "Rejected",
-    },
-    approved: {
-      badge: "bg-green-500/15 text-green-700 border-green-400/30",
-      dot: "bg-green-500",
-      label: "Approved",
-    },
+  } as const;
+
+  const ALIAS: Record<string, keyof typeof THEME> = {
+    open: "in_progress",
+    inprogress: "in_progress",
+    resolved: "fixed",
+    done: "fixed",
+    complete: "fixed",
+    completed: "fixed",
+    cancelled: "closed",
+    canceled: "closed",
+    reject: "closed",
+    rejected: "closed",
+    on_hold: "pending",
+    hold: "pending",
   };
-  const t = THEME[s] ?? THEME.open;
+
+  const key = (s in THEME ? s : (ALIAS[s] ?? "pending")) as keyof typeof THEME;
+  const t = THEME[key];
 
   return (
     <Badge
@@ -79,15 +69,13 @@ function StatusPill({ status }: { status: string }) {
 function UrgencyPill({ urgency }: { urgency?: string | null }) {
   const u = (urgency || "").toUpperCase().trim();
   const MAP: Record<string, string> = {
-    HIGH: "bg-rose-500/15 text-rose-600 border-rose-400/30",
-    MEDIUM: "bg-amber-500/15 text-amber-700 border-amber-400/30",
-    LOW: "bg-slate-500/15 text-slate-600 border-slate-400/30",
+    HIGH: "bg-rose-500/15 text-rose-300 border-rose-500/40",
+    MEDIUM: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+    LOW: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
   };
-  const cls = MAP[u] ?? "bg-slate-500/15 text-slate-600 border-slate-400/30";
+  const cls = MAP[u] ?? "bg-zinc-500/15 text-zinc-300 border-zinc-500/40";
   return (
-    <span
-      className={`inline-flex items-center rounded-full border ${cls} px-2 py-0.5 text-[11px] font-medium`}
-    >
+    <span className={`inline-flex items-center rounded-full border ${cls} px-2 py-0.5 text-[11px] font-medium`}>
       {u || "-"}
     </span>
   );
@@ -104,11 +92,11 @@ function fmtDate(d?: Date | string | null) {
 
 /* ---------- Page ---------- */
 interface PageProps {
-  params: Promise<{ id: string }>; // ✅ ต้อง await ตาม error ที่เจอ
+  params: Promise<{ id: string }>; // ✅ ต้อง await ตาม error เดิม
 }
 
 export default async function StatusDetailPage({ params }: PageProps) {
-  const { id } = await params; // ✅ แก้ error: await ก่อนใช้
+  const { id } = await params; // ✅ await ก่อนใช้
 
   const item = await prisma.repairReport.findUnique({
     where: { id },
@@ -168,9 +156,7 @@ export default async function StatusDetailPage({ params }: PageProps) {
           <div className="grid gap-4 grid-cols-2">
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Title</div>
-              <div className="font-medium leading-snug">
-                {item.issueTitle || "-"}
-              </div>
+              <div className="font-medium leading-snug">{item.issueTitle || "-"}</div>
             </div>
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Asset</div>
