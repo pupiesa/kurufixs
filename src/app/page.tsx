@@ -16,6 +16,12 @@ export default async function Home() {
     select: { status: true },
     where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
   });
+  const urgentCount = await prisma.repairReport.count({
+    where: {
+      urgency: "HIGH",
+      status: { in: ["PENDING", "IN_PROGRESS"] },
+    },
+  });
   return (
     <div className="variant-muted color-muted font-sans">
       <div className="flex flex-col w-full items-center">
@@ -32,6 +38,7 @@ export default async function Home() {
               total={status.length}
               title="Under Repair"
               desc="Currently being serviced"
+              urgentCount={urgentCount}
             />
           </div>
           <div className="basis-full">
