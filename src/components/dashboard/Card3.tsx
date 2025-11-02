@@ -41,7 +41,7 @@ const Cards = async () => {
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Equipment Status Overview</CardTitle>
-        <ul className="flex flex-col gap-3 mt-4 h-[43vh] overflow-y-auto">
+        <ul className="flex flex-col gap-3 mt-4 overflow-y-auto">
           {statusData.map((status) => (
             <li
               key={status.name}

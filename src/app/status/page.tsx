@@ -50,7 +50,7 @@ export default async function StatusPage() {
   const data = await getData(userId);
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 px-6">
       <DataTable columns={columns} data={data} />
     </div>
   );

@@ -688,7 +688,7 @@ export default function ClientUI({
                   {editLocId ? "แก้ไขรายละเอียดสถานที่" : "ระบุอาคาร/ห้อง/ชั้น"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 p-4">
+              <CardContent className="space-y-4 p-4 mx-auto w-full">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="bld">Building *</Label>

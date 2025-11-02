@@ -26,9 +26,9 @@ export default async function Home() {
   return (
     <main className="w-full">
       {/* container: 4" mobile up to large desktop */}
-      <div className="mx-auto w-full max-w-7xl px-2 sm:px-4 lg:px-6 py-3 sm:py-6">
+    <div className="mx-auto mt-5 w-full max-w-7xl px-2 sm:px-4 lg:px-6 py-3 sm:py-6">
         {/* top summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-10">
           <Cards
             total={assetsCount}
             title="Total Assets"
@@ -48,11 +48,11 @@ export default async function Home() {
         </div>
 
         {/* lower section: auto stacks on small screens */}
-        <div className="mt-3 sm:mt-6 grid grid-cols-1 xl:grid-cols-2 gap-2 sm:gap-4">
+        <div className="mt-5 sm:mt-6 grid grid-cols-1 gap-5 xl:grid-cols-2 gap-2 sm:gap-4">
           <div className="w-full">
             <Cards2 />
           </div>
-          <div className="w-full">
+          <div className="w-full mb-10 md:mb-0">
             <Cards3 />
           </div>
         </div>

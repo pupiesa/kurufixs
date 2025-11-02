@@ -27,7 +27,7 @@ const Page = async () => {
   console.log("User:", user); // Debugging log for user
 
   return (
-    <div className="flex justify-center mt-10">
+    <div className="flex justify-center mt-10 mb-8 px-5">
       <Card className="w-100 p-5">
         <CardHeader>
           <p className="font-bold text-2xl">Profile Photo</p>

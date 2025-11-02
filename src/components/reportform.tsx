@@ -291,7 +291,7 @@ export default function Reportform({ assets = [] }: ReportFormProps) {
               }}
               className="space-y-3 sm:space-y-4"
             >
-              <TabsList className="flex flex-wrap gap-2 justify-start">
+              <TabsList className="inline-flex flex-wrap gap-2 justify-start w-max">
                 <TabsTrigger className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2" value="select">
                   เลือกจากรายการครุภัณฑ์
                 </TabsTrigger>
