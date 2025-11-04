@@ -2,58 +2,61 @@ import Cards3 from "@/components/dashboard/Card3";
 import Cards from "@/components/dashboard/Cards";
 import Cards2 from "@/components/dashboard/Cards2";
 import prisma from "@/lib/db";
+import { ReportStatus, Urgency } from "@prisma/client";
+
+// Render this page on Node and always fetch fresh data from the DB.
+export const runtime = "nodejs";
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
-  const assets = await prisma.asset.findMany({
-    select: { id: true },
-  });
   const assetsCount = await prisma.asset.count();
-  const status = await prisma.repairReport.findMany({
-    select: { status: true },
-    where: { status: { in: ["PENDING", "IN_PROGRESS"] } },
+
+  const underRepairCount = await prisma.repairReport.count({
+    where: { status: { in: [ReportStatus.PENDING, ReportStatus.IN_PROGRESS] } },
   });
-  console.log("assets :", assets);
-  console.log("status :", status.length);
+
+  const urgentCount = await prisma.repairReport.count({
+    where: {
+      urgency: Urgency.HIGH,
+      status: { in: [ReportStatus.PENDING, ReportStatus.IN_PROGRESS] },
+    },
+  });
+
   return (
-    <div className="variant-muted color-muted font-sans">
-      <div className="flex flex-col w-full items-center">
-        <div className="flex flex-col w-96 px-10 sm:w-full sm:flex-row justify-between my-5 gap-2">
-          <div className="basis-full">
-            <Cards
-              total={assetsCount}
-              title="Total Assets"
-              desc="Overall registered devices"
-            />
+    <main className="w-full">
+      {/* container: 4" mobile up to large desktop */}
+    <div className="mx-auto mt-5 w-full max-w-7xl px-2 sm:px-4 lg:px-6 py-3 sm:py-6">
+        {/* top summary cards */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-10">
+          <Cards
+            total={assetsCount}
+            title="Total Assets"
+            desc="Overall registered devices"
+          />
+          <Cards
+            total={underRepairCount}
+            title="Under Repair"
+            desc="Currently being serviced"
+          />
+          <Cards
+            total={urgentCount}
+            variant="urgent"
+            title="Urgent Repairs"
+            desc="High urgency (pending / in progress)"
+          />
+        </div>
+
+        {/* lower section: auto stacks on small screens */}
+        <div className="mt-5 sm:mt-6 grid grid-cols-1 gap-5 xl:grid-cols-2 gap-2 sm:gap-4">
+          <div className="w-full">
+            <Cards2 />
           </div>
-          <div className="basis-full">
-            <Cards
-              total={status.length}
-              title="Under Repair"
-              desc="Currently being serviced"
-            />
-          </div>
-          <div className="basis-full">
-            <Cards
-              total={assets.length}
-              title="Under Repair"
-              desc="Currently being serviced"
-            />
+          <div className="w-full mb-10 md:mb-0">
+            <Cards3 />
           </div>
         </div>
       </div>
-      {/* section 2 */}
-      <div className="flex flex-col items-center sm:flex-row justify-around mx-5 gap-5 h-96">
-        <div className="basis-1/2 w-85">
-          <Cards2 />
-        </div>
-        <div className="basis-1/2 w-85">
-          <Cards3 />
-        </div>
-      </div>
-      {/* {asset.map((item: { id: string; assetName: string }) => (
-        <div key={item.id} className="text-center">
-          <h2 className="text-2xl font-bold">{item.assetName}</h2>
-        </div>
-      ))} */}
-    </div>
+    </main>
   );
 }

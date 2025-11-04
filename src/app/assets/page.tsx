@@ -1,6 +1,11 @@
-import { columns } from "@/app/assets/columns";
-import { DataTable } from "@/components/data-table";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+// Ensure Prisma runs on Node and always fetch fresh data
+export const runtime = "nodejs";
+export const revalidate = 0; // disable ISRforce runtime render
+export const dynamic = "force-dynamic";
+import { AssetTable } from "./asset-table";
 
 export type AssetRow = {
   id: string;
@@ -17,6 +22,10 @@ async function getData(): Promise<AssetRow[]> {
       id: true,
       assetCode: true,
       assetName: true,
+      brand: true,
+      model: true,
+      serialNo: true,
+      purchaseDate: true,
       status: { select: { name: true } },
       location: { select: { room: true, building: true } },
       type: true,
@@ -24,11 +33,14 @@ async function getData(): Promise<AssetRow[]> {
     },
     orderBy: { createdAt: "desc" },
   });
-  console.log(asset);
   return asset.map((r) => ({
     id: r.id,
     assetCode: r.assetCode,
     assetName: r.assetName,
+    brand: r.brand,
+    model: r.model,
+    serialNo: r.serialNo,
+    purchaseDate: r.purchaseDate,
     location: `${r.location?.building ?? ""} ${r.location?.room ?? "-"}`,
     status: r.status?.name ?? "",
     type: r.type?.name ?? "",
@@ -36,10 +48,12 @@ async function getData(): Promise<AssetRow[]> {
 }
 
 export default async function AssetPage() {
+  const session = await auth();
+  const userRole = session?.user?.role;
   const data = await getData();
   return (
-    <div className="container mx-auto py-10">
-      <DataTable columns={columns} data={data} />
+    <div className="container mx-auto py-10 px-5">
+      <AssetTable data={data} userRole={userRole} />
     </div>
   );
 }

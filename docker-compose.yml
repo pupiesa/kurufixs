@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+  # No pnpm or prisma commands at runtime; the image already has everything.
+  # Let the image CMD be used (Dockerfile uses `pnpm exec next start`).
+  # If you need to override, set command here to e.g. ["pnpm", "exec", "next", "start"].

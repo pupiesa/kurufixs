@@ -1,7 +1,7 @@
 import { columns } from "@/app/status/columns";
 import { DataTable } from "@/components/data-table";
-import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export type ReportRow = {
   id: string;
@@ -50,7 +50,7 @@ export default async function StatusPage() {
   const data = await getData(userId);
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 px-6">
       <DataTable columns={columns} data={data} />
     </div>
   );

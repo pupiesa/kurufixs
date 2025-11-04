@@ -24,6 +24,12 @@ const Navbars = () => {
         return "User Profile Setting";
       case (path.startsWith("/assets") && path) || "/assets":
         return "Assets";
+      case (path.startsWith("/staff") && path) || "/staff":
+        return "Ticket Management";
+      case (path.startsWith("/admin") && path) || "/admin":
+        return "Admin Panel";
+      case (path.startsWith("/addasset") && path) || "/addasset":
+        return "Admin Panel";
       default:
         return "Dashboard";
     }
@@ -49,7 +55,11 @@ const Navbars = () => {
         <h6 className="text-4xl font-bold">{displayName}</h6>
       </div>
       {pathname !== "/account" &&
+        // pathname !== /staff/* to exclude all sub-paths under /staff
+        !pathname.startsWith("/staff") &&
+        pathname &&
         pathname !== "/reports" &&
+        !pathname.startsWith("/admin") &&
         pathname !== "/settings" && (
           <Link href="/reports" className="mr-4">
             <Buttons />

@@ -29,107 +29,124 @@ export async function POST(req: Request) {
       );
     }
 
-    let finalAssetId: string | null = null;
-
-    if (!manualAsset) {
-      if (!assetId)
-        return NextResponse.json(
-          { message: "กรุณาเลือกครุภัณฑ์หรือกรอกข้อมูล" },
-          { status: 400 }
-        );
-      const asset = await prisma.asset.findUnique({
-        where: { id: String(assetId) },
+    const result = await prisma.$transaction(async (tx) => {
+      // 1) Prepare asset status
+      const statusName = assetStatusName || "ชำรุด";
+      const status = await tx.assetStatus.upsert({
+        where: { name: statusName },
+        update: {},
+        create: { name: statusName },
         select: { id: true },
       });
-      if (!asset)
-        return NextResponse.json(
-          { message: "Asset not found" },
-          { status: 404 }
-        );
-      finalAssetId = asset.id;
-    } else {
-      // Create minimal related records if names provided
-      let typeId: string | undefined;
-      if (assetTypeName) {
-        const type = await prisma.assetType.upsert({
-          where: { name: String(assetTypeName) },
+
+      // 2) เตรียม type (เฉพาะกรณี manual)
+      let typeId: string | undefined = undefined;
+      if (manualAsset) {
+        const typeName =
+          assetTypeName && String(assetTypeName).trim().length > 0
+            ? String(assetTypeName)
+            : "ครุภัณฑ์อื่นๆ";
+
+        const type = await tx.assetType.upsert({
+          where: { name: typeName },
           update: {},
-          create: { name: String(assetTypeName) },
-          select: { id: true },
-        });
-        typeId = type.id;
-      } else {
-        // fallback: create/find a generic type
-        const type = await prisma.assetType.upsert({
-          where: { name: "ครุภัณฑ์อื่นๆ" },
-          update: {},
-          create: { name: "ครุภัณฑ์อื่นๆ" },
+          create: { name: typeName },
           select: { id: true },
         });
         typeId = type.id;
       }
 
-      let statusId: string | undefined;
-      const statusName = assetStatusName || "ชำรุด";
-      const status = await prisma.assetStatus.upsert({
-        where: { name: String(statusName) },
-        update: {},
-        create: { name: String(statusName) },
-        select: { id: true },
-      });
-      statusId = status.id;
+      // 3) หา/สร้างผู้แจ้ง (ใช้เฉพาะข้อมูลประกอบ report)
+      let finalReporterName: string | null = null;
+      let finalReporterEmail: string | null = null;
+      if (reporterId) {
+        const user = await tx.user.findUnique({
+          where: { id: String(reporterId) },
+          select: { name: true, email: true },
+        });
+        if (user) {
+          finalReporterName = user.name ?? null;
+          finalReporterEmail = user.email ?? null;
+        }
+      }
 
-      const createdAsset = await prisma.asset.create({
+      // 4) หา/สร้าง asset แล้ว "บังคับ" เปลี่ยนสถานะเป็นชำรุด
+      let finalAssetId: string;
+
+      if (!manualAsset) {
+        if (!assetId) {
+          throw new Error("กรุณาเลือกครุภัณฑ์หรือกรอกข้อมูล");
+        }
+        // ยืนยันว่ามี asset
+        const existing = await tx.asset.findUnique({
+          where: { id: String(assetId) },
+          select: { id: true },
+        });
+        if (!existing) {
+          throw new Error("Asset not found");
+        }
+
+        // อัปเดตสถานะเป็นชำรุด
+        const updated = await tx.asset.update({
+          where: { id: String(assetId) },
+          data: { statusId: status.id },
+          select: { id: true },
+        });
+        finalAssetId = updated.id;
+      } else {
+        // กรณี manual: สร้าง asset ใหม่ พร้อมสถานะชำรุด
+        const createdAsset = await tx.asset.create({
+          data: {
+            assetCode:
+              assetCodeManual && String(assetCodeManual).trim().length > 0
+                ? String(assetCodeManual)
+                : `TMP-${Date.now()}`,
+            assetName: String(assetNameManual || "ครุภัณฑ์ไม่ทราบชื่อ"),
+            typeId: typeId!, // มาจากขั้นตอน 2
+            statusId: status.id, // บังคับเป็นชำรุด
+          },
+          select: { id: true },
+        });
+        finalAssetId = createdAsset.id;
+      }
+
+      // 5) สร้างใบแจ้งซ่อม
+      const createdReport = await tx.repairReport.create({
         data: {
-          assetCode:
-            assetCodeManual && String(assetCodeManual).length > 0
-              ? String(assetCodeManual)
-              : `TMP-${Date.now()}`,
-          assetName: String(assetNameManual || "ครุภัณฑ์ไม่ทราบชื่อ"),
-          typeId: typeId!,
-          statusId: statusId!,
+          assetId: finalAssetId,
+          issueTitle: String(issueTitle),
+          issueDescription: String(issueDescription),
+          issueCategory: issueCategory ? String(issueCategory) : null,
+          urgency:
+            urgency && ["LOW", "MEDIUM", "HIGH"].includes(urgency)
+              ? urgency
+              : "MEDIUM",
+          imageUrl: imageUrl ? String(imageUrl) : null,
+          reporterId: reporterId ? String(reporterId) : null,
+          reporterName: finalReporterName ?? "",
+          reporterEmail: finalReporterEmail ?? "",
+          reporterPhone: reporterPhone ? String(reporterPhone) : null,
         },
         select: { id: true },
       });
-      finalAssetId = createdAsset.id;
-    }
 
-    // Derive reporter details from user if reporterId provided
-    let finalReporterName: string | null = null;
-    let finalReporterEmail: string | null = null;
-    if (reporterId) {
-      const user = await prisma.user.findUnique({
-        where: { id: String(reporterId) },
-        select: { name: true, email: true },
-      });
-      if (user) {
-        finalReporterName = user.name ?? null;
-        finalReporterEmail = user.email ?? null;
-      }
-    }
-
-    const created = await prisma.repairReport.create({
-      data: {
-        assetId: finalAssetId!,
-        issueTitle: String(issueTitle),
-        issueDescription: String(issueDescription),
-        issueCategory: issueCategory ? String(issueCategory) : null,
-        urgency:
-          urgency && ["LOW", "MEDIUM", "HIGH"].includes(urgency)
-            ? urgency
-            : "MEDIUM",
-        imageUrl: imageUrl ? String(imageUrl) : null,
-        reporterId: reporterId ? String(reporterId) : null,
-        reporterName: finalReporterName ?? "",
-        reporterEmail: finalReporterEmail ?? "",
-        reporterPhone: reporterPhone ? String(reporterPhone) : null,
-      },
-      select: { id: true },
+      return createdReport.id;
     });
 
-    return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
-  } catch (e) {
+    return NextResponse.json({ ok: true, id: result }, { status: 201 });
+  } catch (e: any) {
+    const msg =
+      typeof e?.message === "string" && e.message.includes("กรุณาเลือกครุภัณฑ์")
+        ? e.message
+        : typeof e?.message === "string" &&
+          e.message.includes("Asset not found")
+        ? e.message
+        : "Server error";
+
     console.error("Create report error", e);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: msg },
+      { status: msg === "Server error" ? 500 : 400 }
+    );
   }
 }
